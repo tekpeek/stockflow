@@ -3,6 +3,8 @@ import pandas as pd
 
 def calculate_final_signal(stock_id: str):
     print(calculate_rsi(stock_id))
+    print(calculate_macd_signal("RELIANCE.NS"))
+    print(calculate_bollinger_bands("RELIANCE.NS"))
 
 def calculate_rsi(stock_symbol: str, period: int = 14, interval: str = '1d') -> float:
     nse_symbol = stock_symbol.upper()
@@ -32,4 +34,136 @@ def calculate_rsi(stock_symbol: str, period: int = 14, interval: str = '1d') -> 
         'rsi_smooth': round(float(rsi_smooth[stock_symbol]), 2)
     }
 
+def calculate_macd_signal(stock_symbol: str, interval: str = '1d') -> dict:
+    symbol = stock_symbol.upper()
+    df = yf.download(symbol, period="3mo", interval=interval)
+    if df.empty or 'Close' not in df.columns:
+        raise ValueError(f"Could not fetch data for {stock_symbol}.")
+
+    close = df['Close']
+    ema12 = close.ewm(span=12, adjust=False).mean()
+    ema26 = close.ewm(span=26, adjust=False).mean()
+
+    macd = (ema12 - ema26).squeeze()
+    signal = macd.ewm(span=9, adjust=False).mean().squeeze()
+    hist = (macd - signal).squeeze()
+
+    m0 = macd.iloc[-1].item() if isinstance(macd.iloc[-1], pd.Series) else macd.iloc[-1]
+    m1 = macd.iloc[-2].item() if isinstance(macd.iloc[-2], pd.Series) else macd.iloc[-2]
+    s0 = signal.iloc[-1].item() if isinstance(signal.iloc[-1], pd.Series) else signal.iloc[-1]
+    s1 = signal.iloc[-2].item() if isinstance(signal.iloc[-2], pd.Series) else signal.iloc[-2]
+    h0 = hist.iloc[-1].item() if isinstance(hist.iloc[-1], pd.Series) else hist.iloc[-1]
+
+    # crossover detection
+    prev_above = m1 > s1
+    now_above  = m0 > s0
+    if not prev_above and now_above:
+        crossover = "bullish_crossover"
+    elif prev_above and not now_above:
+        crossover = "bearish_crossover"
+    else:
+        crossover = "none"
+
+    # momentum direction: are both rising?
+    momentum_up = (m0 > m1) and (s0 > s1)
+
+    # which line is lower now, and is it rising?
+    lower_line_rising = (m0 < s0 and m0 > m1) or (s0 <= m0 and s0 > s1)
+
+    # potential entry: bullish crossover + lower line rising
+    is_entry = (crossover == "bullish_crossover") and lower_line_rising
+
+    # trend strength from histogram
+    if h0 > 0.5:
+        strength = "strong_bullish"
+    elif h0 > 0:
+        strength = "moderate_bullish"
+    elif h0 > -0.5:
+        strength = "weak_bearish"
+    else:
+        strength = "strong_bearish"
+
+    return {
+        "macd": round(m0, 4),
+        "signal": round(s0, 4),
+        "histogram": round(h0, 4),
+        "crossover": crossover,
+        "trend_strength": strength,
+        "momentum_up": momentum_up,
+        "is_potential_entry": is_entry
+    }
+
+def calculate_bollinger_bands(stock_symbol: str, window: int = 20, num_std: float = 2):
+    data = yf.download(stock_symbol, period="3mo", interval="1d")
+    close = data['Close']
+    middle_band = close.rolling(window).mean()
+    std_dev = close.rolling(window).std()
+
+    upper_band = middle_band + (std_dev * num_std)
+    lower_band = middle_band - (std_dev * num_std)
+
+    # Drop NaNs at start to get valid indices
+    valid_idx = middle_band.dropna().index
+    if len(valid_idx) < 2:
+        raise ValueError("Not enough data points after rolling window to compute Bollinger Bands")
+
+    last_idx = valid_idx[-1]
+    prev_idx = valid_idx[-2]
+
+    price = close.loc[last_idx]
+    price_prev = close.loc[prev_idx]
+    mb_latest = middle_band.loc[last_idx]
+    mb_prev = middle_band.loc[prev_idx]
+    ub_latest = upper_band.loc[last_idx]
+    lb_latest = lower_band.loc[last_idx]
+
+    # Convert to scalars if they are pandas Series with single values
+    def to_scalar(val, name):
+        if isinstance(val, pd.Series) and len(val) == 1:
+            print(f"Converting {name} from Series to scalar")
+            return val.iloc[0]
+        elif isinstance(val, pd.Series):
+            print(f"Warning: {name} is Series with length > 1")
+            raise ValueError(f"{name} is Series with multiple values: {val}")
+        return val
+
+    price = to_scalar(price, "price")
+    price_prev = to_scalar(price_prev, "price_prev")
+    mb_latest = to_scalar(mb_latest, "mb_latest")
+    mb_prev = to_scalar(mb_prev, "mb_prev")
+    ub_latest = to_scalar(ub_latest, "ub_latest")
+    lb_latest = to_scalar(lb_latest, "lb_latest")
+
+    band_width = (ub_latest - lb_latest) / mb_latest if mb_latest != 0 else 0
+
+    overbought_threshold = 0.98
+    oversold_threshold = 1.02
+
+    is_overbought = price >= ub_latest * overbought_threshold
+    is_oversold = price <= lb_latest * oversold_threshold
+
+    bandwidth_series = (upper_band - lower_band) / middle_band
+    avg_bandwidth = bandwidth_series.rolling(window).mean()
+    avg_bandwidth_latest = avg_bandwidth.loc[last_idx]
+    avg_bandwidth_latest = to_scalar(avg_bandwidth_latest, "avg_bandwidth_latest")
+
+    is_squeeze = False
+    if pd.notna(avg_bandwidth_latest):
+        is_squeeze = band_width < avg_bandwidth_latest * 0.5
+
+    crossed_above_middle = (price_prev < mb_prev) and (price > mb_latest)
+    crossed_below_middle = (price_prev > mb_prev) and (price < mb_latest)
+
+    return {
+        'middle_band': middle_band,
+        'upper_band': upper_band,
+        'lower_band': lower_band,
+        'is_overbought': is_overbought,
+        'is_oversold': is_oversold,
+        'is_squeeze': is_squeeze,
+        'band_width': band_width,
+        'price': price,
+        'crossed_above_middle': crossed_above_middle,
+        'crossed_below_middle': crossed_below_middle,
+    }
 calculate_final_signal("RELIANCE.NS")

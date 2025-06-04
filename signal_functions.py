@@ -2,9 +2,53 @@ import yfinance as yf
 import pandas as pd
 
 def calculate_final_signal(stock_id: str):
-    print(calculate_rsi(stock_id))
-    print(calculate_macd_signal("RELIANCE.NS"))
-    print(calculate_bollinger_bands("RELIANCE.NS"))
+    rsi = calculate_rsi(stock_id)
+    macd = calculate_macd_signal(stock_id)
+    bb = calculate_bollinger_bands(stock_id)
+    return should_buy(rsi, macd, bb)
+
+def should_buy(rsi_result, macd_result, bb_result):
+    reasons = []
+    buy_signal = False
+
+    # RSI condition: oversold or recovering
+    if rsi_result['rsi'] < 30 or (rsi_result['rsi'] > 30 and rsi_result['rsi_smooth'] > rsi_result['rsi']):
+        reasons.append(f"RSI is low or recovering: RSI={rsi_result['rsi']:.2f}")
+    else:
+        reasons.append(f"RSI not favorable: RSI={rsi_result['rsi']:.2f}")
+
+    # MACD condition: bullish crossover and rising momentum
+    if macd_result['crossover']!= "none" and macd_result['momentum_up']:
+        reasons.append("MACD bullish crossover with rising momentum")
+    else:
+        reasons.append("MACD not indicating bullish momentum")
+
+    # Bollinger Bands condition: price crossed above middle, squeeze or oversold
+    bb_buy = False
+    if bb_result['crossed_above_middle']:
+        bb_buy = True
+        reasons.append("Price crossed above Bollinger middle band")
+    if bb_result['is_squeeze']:
+        bb_buy = True
+        reasons.append("Bollinger Bands in squeeze, potential breakout")
+    if bb_result['is_oversold']:
+        bb_buy = True
+        reasons.append("Price near or below lower Bollinger Band (oversold)")
+
+    if not bb_buy:
+        reasons.append("Bollinger Bands not indicating buy")
+
+    # Combine signals: require RSI favorable + MACD bullish + any BB buy signal
+    if (rsi_result['rsi'] < 35) and macd_result['macd_crossed'] and macd_result['histogram_trending_up'] and bb_buy:
+        buy_signal = True
+        reasons.insert(0, "Strong BUY signal detected based on all indicators")
+    else:
+        reasons.insert(0, "No strong BUY signal detected")
+
+    return {
+        'buy': buy_signal,
+        'reason': "; ".join(reasons)
+    }
 
 def calculate_rsi(stock_symbol: str, period: int = 14, interval: str = '1d') -> float:
     nse_symbol = stock_symbol.upper()
@@ -166,4 +210,4 @@ def calculate_bollinger_bands(stock_symbol: str, window: int = 20, num_std: floa
         'crossed_above_middle': crossed_above_middle,
         'crossed_below_middle': crossed_below_middle,
     }
-calculate_final_signal("RELIANCE.NS")
+#print(calculate_final_signal("RELIANCE.NS"))

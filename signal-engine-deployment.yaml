@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: signal-engine
+    labels:
+      app: signal-engine
+spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        app: signal-engine
+    template:
+      metadata:
+        labels:
+          app: signal-engine
+      spec:
+        containers:
+        - name: signal-engine
+          image: kingaiva/signal-engine:dev
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+              name: se-port
+          env:
+          - name: PORT
+            value: "8000"

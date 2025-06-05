@@ -210,4 +210,3 @@ def calculate_bollinger_bands(stock_symbol: str, window: int = 20, num_std: floa
         'crossed_above_middle': crossed_above_middle,
         'crossed_below_middle': crossed_below_middle,
     }
-#print(calculate_final_signal("RELIANCE.NS"))

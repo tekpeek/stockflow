@@ -1,0 +1,1 @@
+source ~/.venv/bin/activate && sed -e "s|8000|9000|g" signal_engine.py > test.py && python3 test.py

@@ -1,10 +1,12 @@
 import yfinance as yf
 import pandas as pd
 
-def calculate_final_signal(stock_id: str):
-    rsi = calculate_rsi(stock_id)
-    macd = calculate_macd_signal(stock_id)
-    bb = calculate_bollinger_bands(stock_id)
+def calculate_final_signal(stock_id: str,interval: str = '1d'):
+    nse_symbol = stock_id.upper()
+    df = yf.download(nse_symbol, period="3mo", interval=interval, progress=False, auto_adjust=False) 
+    rsi = calculate_rsi(stock_id,df)
+    macd = calculate_macd_signal(stock_id,df)
+    bb = calculate_bollinger_bands(stock_id,df)
     return should_buy(rsi, macd, bb)
 
 def should_buy(rsi_result, macd_result, bb_result):
@@ -50,9 +52,7 @@ def should_buy(rsi_result, macd_result, bb_result):
         'reason': "; ".join(reasons)
     }
 
-def calculate_rsi(stock_symbol: str, period: int = 14, interval: str = '1d') -> float:
-    nse_symbol = stock_symbol.upper()
-    df = yf.download(nse_symbol, period="3mo", interval=interval)
+def calculate_rsi(stock_symbol: str, df, period: int = 14, interval: str = '1d') -> float:
 
     if df.empty or 'Close' not in df.columns:
         return {"error": "Could not fetch data for {stock_symbol}."}
@@ -72,15 +72,15 @@ def calculate_rsi(stock_symbol: str, period: int = 14, interval: str = '1d') -> 
     # Drop NaNs and get latest value
     latest_rsi = rsi.dropna().iloc[-1]
     rsi_smooth = rsi.ewm(span=5, adjust=False).mean().iloc[-1]
-    #return round(latest_rsi, 2)
+    
     return {
         'rsi': round(float(latest_rsi[stock_symbol]), 2),
         'rsi_smooth': round(float(rsi_smooth[stock_symbol]), 2)
     }
 
-def calculate_macd_signal(stock_symbol: str, interval: str = '1d') -> dict:
+def calculate_macd_signal(stock_symbol: str, df, interval: str = '1d') -> dict:
     symbol = stock_symbol.upper()
-    df = yf.download(symbol, period="3mo", interval=interval)
+    df = yf.download(symbol, period="3mo", interval=interval, progress=False, auto_adjust=False)
     if df.empty or 'Close' not in df.columns:
         raise ValueError(f"Could not fetch data for {stock_symbol}.")
 
@@ -137,8 +137,8 @@ def calculate_macd_signal(stock_symbol: str, interval: str = '1d') -> dict:
         "is_potential_entry": is_entry
     }
 
-def calculate_bollinger_bands(stock_symbol: str, window: int = 20, num_std: float = 2):
-    data = yf.download(stock_symbol, period="3mo", interval="1d")
+def calculate_bollinger_bands(stock_symbol: str, df, window: int = 20, num_std: float = 2):
+    data = yf.download(stock_symbol, period="3mo", interval="1d", progress=False, auto_adjust=False)
     close = data['Close']
     middle_band = close.rolling(window).mean()
     std_dev = close.rolling(window).std()
@@ -164,10 +164,10 @@ def calculate_bollinger_bands(stock_symbol: str, window: int = 20, num_std: floa
     # Convert to scalars if they are pandas Series with single values
     def to_scalar(val, name):
         if isinstance(val, pd.Series) and len(val) == 1:
-            print(f"Converting {name} from Series to scalar")
+            #print(f"Converting {name} from Series to scalar")
             return val.iloc[0]
         elif isinstance(val, pd.Series):
-            print(f"Warning: {name} is Series with length > 1")
+            #print(f"Warning: {name} is Series with length > 1")
             raise ValueError(f"{name} is Series with multiple values: {val}")
         return val
 

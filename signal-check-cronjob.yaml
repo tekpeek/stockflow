@@ -1,0 +1,26 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: signal-check-cronjob
+spec:
+  schedule: "0 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: signal-check
+            image: kingaiva/signal-engine:dev
+            command: ["python3", "/home/ubuntu/app/cronjob-execution.py"]
+            volumeMounts:
+              - name: cronjob-config-volume
+                mountPath: /home/ubuntu/app/top_300_nse_tickers.py
+                subPath: top_300_nse_tickers.py
+              - name: cronjob-config-volume
+                mountPath: /home/ubuntu/app/cronjob-execution.py
+                subPath: cronjob-execution.py
+          restartPolicy: OnFailure
+          volumes:
+            - name: cronjob-config-volume
+              configMap:
+                name: cronjob-config

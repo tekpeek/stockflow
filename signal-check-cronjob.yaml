@@ -3,7 +3,7 @@ kind: CronJob
 metadata:
   name: signal-check-cronjob
 spec:
-  schedule: "0 * * * *"
+  schedule: "30 10 * * *"
   jobTemplate:
     spec:
       template:
@@ -11,7 +11,23 @@ spec:
           containers:
           - name: signal-check
             image: kingaiva/signal-engine:dev
-            command: ["python3", "/home/ubuntu/app/cronjob-execution.py"]
+            env:
+              - name: SMTP_HOST
+                valueFrom:
+                  secretKeyRef:
+                    name: smtp-credentials
+                    key: smtp-host
+              - name: SMTP_PORT
+                valueFrom:
+                  secretKeyRef:
+                    name: smtp-credentials
+                    key: smtp-port
+              - name: SMTP_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: smtp-credentials
+                    key: smtp-password
+            command: ["/bin/bash", "-c", "python3 /home/ubuntu/app/cronjob-execution.py"]
             volumeMounts:
               - name: cronjob-config-volume
                 mountPath: /home/ubuntu/app/top_300_nse_tickers.py
@@ -19,6 +35,9 @@ spec:
               - name: cronjob-config-volume
                 mountPath: /home/ubuntu/app/cronjob-execution.py
                 subPath: cronjob-execution.py
+              - name: cronjob-config-volume
+                mountPath: /home/ubuntu/app/smtp_email_trigger.py
+                subPath: smtp_email_trigger.py
           restartPolicy: OnFailure
           volumes:
             - name: cronjob-config-volume

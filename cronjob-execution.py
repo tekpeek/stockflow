@@ -1,4 +1,5 @@
 import top_300_nse_tickers
+import smtp_email_trigger as email_trigger
 import os
 
 def identify_stocks():
@@ -14,10 +15,7 @@ def identify_stocks():
 
     return [final_buy_list,error_list]
 
-def trigger_email(list_data):
-    print("hello")
-
 if __name__ == "__main__":
     list_data = identify_stocks()
-    if len(list_data[0])>0 or len(list_data[1])>0 or True:
-        trigger_email(list_data)
+    if len(list_data[0])>0 or len(list_data[1])>0:
+        email_trigger.send_email(list_data[0],list_data[1])

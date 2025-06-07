@@ -1,6 +1,13 @@
 FROM ubuntu:latest
 
-RUN apt-get update && apt-get install python3 python3-pip python3-venv -y
+RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-pip \
+    python3-venv \
+    jq \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 RUN python3 -m venv /app/venv
 

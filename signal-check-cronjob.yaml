@@ -3,7 +3,7 @@ kind: CronJob
 metadata:
   name: signal-check-cronjob
 spec:
-  schedule: "30 10 * * *"
+  schedule: "0 5,9 * * *"
   jobTemplate:
     spec:
       template:

@@ -1,15 +1,11 @@
 name: build-image-and-push
-
 on:
   push:
     branches: [ "main" ]
     
 jobs:
-
   build:
-
-    runs-on: ubuntu-latest
-
+    runs-on: self-hosted
     steps:
     - name: Check out the repo
       uses: actions/checkout@v4

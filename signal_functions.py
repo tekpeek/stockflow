@@ -199,9 +199,9 @@ def calculate_bollinger_bands(stock_symbol: str, df, window: int = 20, num_std: 
     crossed_below_middle = (price_prev > mb_prev) and (price < mb_latest)
 
     return {
-        'middle_band': middle_band,
-        'upper_band': upper_band,
-        'lower_band': lower_band,
+        'middle_band': mb_latest,
+        'upper_band': ub_latest,
+        'lower_band': lb_latest,
         'is_overbought': is_overbought,
         'is_oversold': is_oversold,
         'is_squeeze': is_squeeze,

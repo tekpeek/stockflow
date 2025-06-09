@@ -5,6 +5,7 @@ on:
     
 jobs:
   build:
+    name: build-image-and-push
     runs-on: self-hosted
     steps:
     - name: Check out the repo

@@ -1,12 +1,12 @@
 import yfinance as yf
 import pandas as pd
 
-def calculate_final_signal(stock_id: str,interval: str = '1d'):
+def calculate_final_signal(stock_id: str,interval: str,period: int,window: int, num_std: float):
     nse_symbol = stock_id.upper()
     df = yf.download(nse_symbol, period="3mo", interval=interval, progress=False, auto_adjust=False) 
-    rsi = calculate_rsi(stock_id,df)
-    macd = calculate_macd_signal(stock_id,df)
-    bb = calculate_bollinger_bands(stock_id,df)
+    rsi = calculate_rsi(stock_id,df,period,interval)
+    macd = calculate_macd_signal(stock_id,df,interval)
+    bb = calculate_bollinger_bands(stock_id,df,window,num_std)
     return should_buy(rsi, macd, bb)
 
 def should_buy(rsi_result, macd_result, bb_result):
@@ -52,7 +52,7 @@ def should_buy(rsi_result, macd_result, bb_result):
         'reason': "; ".join(reasons)
     }
 
-def calculate_rsi(stock_symbol: str, df, period: int = 14, interval: str = '1d') -> float:
+def calculate_rsi(stock_symbol: str, df, period: int, interval: str) -> float:
 
     if df.empty or 'Close' not in df.columns:
         return {"error": "Could not fetch data for {stock_symbol}."}
@@ -78,7 +78,7 @@ def calculate_rsi(stock_symbol: str, df, period: int = 14, interval: str = '1d')
         'rsi_smooth': round(float(rsi_smooth[stock_symbol]), 2)
     }
 
-def calculate_macd_signal(stock_symbol: str, df, interval: str = '1d') -> dict:
+def calculate_macd_signal(stock_symbol: str, df, interval: str) -> dict:
     symbol = stock_symbol.upper()
     df = yf.download(symbol, period="3mo", interval=interval, progress=False, auto_adjust=False)
     if df.empty or 'Close' not in df.columns:
@@ -137,7 +137,7 @@ def calculate_macd_signal(stock_symbol: str, df, interval: str = '1d') -> dict:
         "is_potential_entry": is_entry
     }
 
-def calculate_bollinger_bands(stock_symbol: str, df, window: int = 20, num_std: float = 2):
+def calculate_bollinger_bands(stock_symbol: str, df, window: int, num_std: float):
     data = yf.download(stock_symbol, period="3mo", interval="1d", progress=False, auto_adjust=False)
     close = data['Close']
     middle_band = close.rolling(window).mean()

@@ -3,7 +3,7 @@ name: build-image-and-push
 on:
   workflow_dispatch:
   push:
-    branches: [ "main" ]
+  #  branches: [ "main" ]
     
 jobs:
   build:

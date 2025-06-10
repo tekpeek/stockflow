@@ -18,11 +18,11 @@ logger = logging.getLogger(__name__)
 signal_engine = FastAPI()
 
 @signal_engine.get("/{stock_id}")
-def get_stock_data(stock_id: str):
+def get_stock_data(stock_id: str,interval: str = '1d',period: int = 14,window: int = 20, num_std: float = 2):
     logging.info("Triggering signal-engine for "+stock_id)
     if stock_id.endswith(".NS"):
         try:
-            return_data = sf.calculate_final_signal(stock_id) # Debug print
+            return_data = sf.calculate_final_signal(stock_id,interval,period,window,num_std)
             if return_data is None:
                 logger.error("Return data is None")
                 return JSONResponse({"error": "No data returned from signal calculation"})

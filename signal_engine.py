@@ -5,6 +5,7 @@ from fastapi.responses import JSONResponse
 import signal_functions as sf
 import logging
 import sys
+import os
 
 # Configure logging to print to stdout
 logging.basicConfig(
@@ -15,11 +16,24 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Get values from environment variables (Kubernetes ConfigMap/Secret)
+DEFAULT_INTERVAL = os.getenv("INTERVAL")
+DEFAULT_PERIOD = int(os.getenv("PERIOD"))
+DEFAULT_WINDOW = int(os.getenv("WINDOW"))
+DEFAULT_NUM_STD = float(os.getenv("NUM_STD"))
+
 signal_engine = FastAPI()
 
 @signal_engine.get("/{stock_id}")
-def get_stock_data(stock_id: str,interval: str = '1d',period: int = 14,window: int = 20, num_std: float = 2):
+def get_stock_data(
+    stock_id: str,
+    interval: str = DEFAULT_INTERVAL,
+    period: int = DEFAULT_PERIOD,
+    window: int = DEFAULT_WINDOW,
+    num_std: float = DEFAULT_NUM_STD
+):
     logging.info("Triggering signal-engine for "+stock_id)
+    logging.info(f"Strategy Values: interval: {interval}, period: {period}, window: {window}, num_std: {num_std}")
     if stock_id.endswith(".NS"):
         try:
             return_data = sf.calculate_final_signal(stock_id,interval,period,window,num_std)

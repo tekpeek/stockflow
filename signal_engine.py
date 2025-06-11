@@ -5,6 +5,7 @@ from fastapi.responses import JSONResponse
 import signal_functions as sf
 import logging
 import sys
+import os
 
 # Configure logging to print to stdout
 logging.basicConfig(
@@ -14,10 +15,10 @@ logging.basicConfig(
     force=True
 )
 logger = logging.getLogger(__name__)
-interval = sys.argv[1]
-period = sys.argv[2]
-window = sys.argv[3]
-num_std = sys.argv[4]
+interval = os.getenv("INTERVAL")
+period = os.getenv("PERIOD")
+window = os.getenv("WINDOW")
+num_std = os.getenv("NUM_STD")
 signal_engine = FastAPI()
 
 @signal_engine.get("/{stock_id}")

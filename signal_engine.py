@@ -15,14 +15,23 @@ logging.basicConfig(
     force=True
 )
 logger = logging.getLogger(__name__)
-interval = os.getenv("INTERVAL")
-period = os.getenv("PERIOD")
-window = os.getenv("WINDOW")
-num_std = os.getenv("NUM_STD")
+
+# Get values from environment variables (Kubernetes ConfigMap/Secret)
+DEFAULT_INTERVAL = os.getenv("INTERVAL")
+DEFAULT_PERIOD = int(os.getenv("PERIOD"))
+DEFAULT_WINDOW = int(os.getenv("WINDOW"))
+DEFAULT_NUM_STD = float(os.getenv("NUM_STD"))
+
 signal_engine = FastAPI()
 
 @signal_engine.get("/{stock_id}")
-def get_stock_data(stock_id: str,interval: str,period: int,window: int, num_std: float):
+def get_stock_data(
+    stock_id: str,
+    interval: str = DEFAULT_INTERVAL,
+    period: int = DEFAULT_PERIOD,
+    window: int = DEFAULT_WINDOW,
+    num_std: float = DEFAULT_NUM_STD
+):
     logging.info("Triggering signal-engine for "+stock_id)
     logging.info(f"Strategy Values: interval: {interval}, period: {period}, window: {window}, num_std: {num_std}")
     if stock_id.endswith(".NS"):

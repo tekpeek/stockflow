@@ -17,6 +17,27 @@ spec:
         containers:
         - name: signal-engine
           image: kingaiva/signal-engine:dev
+          env:
+            - name: INTERVAL
+              valueFrom:
+                secretKeyRef:
+                  name: strategy-config
+                  key: interval
+            - name: PERIOD
+              valueFrom:
+                secretKeyRef:
+                  name: strategy-config
+                  key: period
+            - name: WINDOW
+              valueFrom:
+                secretKeyRef:
+                  name: strategy-config
+                  key: window
+            - name: NUM_STD
+              valueFrom:
+                secretKeyRef:
+                  name: strategy-config
+                  key: num_std
           imagePullPolicy: Always
           ports:
             - containerPort: 8000

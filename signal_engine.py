@@ -14,12 +14,16 @@ logging.basicConfig(
     force=True
 )
 logger = logging.getLogger(__name__)
-
+interval = sys.argv[1]
+period = sys.argv[2]
+window = sys.argv[3]
+num_std = sys.argv[4]
 signal_engine = FastAPI()
 
 @signal_engine.get("/{stock_id}")
-def get_stock_data(stock_id: str,interval: str = '1d',period: int = 14,window: int = 20, num_std: float = 2):
+def get_stock_data(stock_id: str,interval: str,period: int,window: int, num_std: float):
     logging.info("Triggering signal-engine for "+stock_id)
+    logging.info(f"Strategy Values: interval: {interval}, period: {period}, window: {window}, num_std: {num_std}")
     if stock_id.endswith(".NS"):
         try:
             return_data = sf.calculate_final_signal(stock_id,interval,period,window,num_std)

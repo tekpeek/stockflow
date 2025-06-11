@@ -1,5 +1,13 @@
 #!/bin/bash
 
+# Delete and recreate strategy related configuration secret
+kubectl delete secret generic strategy-config --ignore-not-found
+kubectl create secret generic strategy-config \
+    --from-literal=interval="1d" \
+    --from-literal=period=14 \
+    --from-literal=window=20 \
+    --from-literal=num_std=2
+
 # Delete old deployment and deploy the signal engine server
 kubectl delete deployment signal-engine --ignore-not-found
 kubectl apply -f signal-engine-deployment.yaml

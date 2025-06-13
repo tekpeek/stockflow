@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: stockflow-controller
+    labels:
+      app: stockflow-controller
+spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        app: stockflow-controller
+    template:
+      metadata:
+        labels:
+          app: stockflow-controller
+      spec:
+        containers:
+        - name: stockflow-controller
+          image: kingaiva/stockflow-controller:dev
+          env:
+            - name: PORT
+              value: "9000"
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 9000
+              name: sc-port

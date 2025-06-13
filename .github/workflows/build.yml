@@ -23,5 +23,6 @@ jobs:
       uses: docker/build-push-action@v5
       with:
        context:
+       file: ./Dockefile.signal-engine
        push: true
        tags: kingaiva/signal-engine:dev

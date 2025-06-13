@@ -16,7 +16,7 @@ ENV PYTHONUNBUFFERED=1
 
 RUN pip install fastapi uvicorn yfinance pandas
 
-COPY signal_engine.py /app/signal_engine.py
-COPY signal_functions.py /app/signal_functions.py
+COPY src/api/signal_engine.py /app/signal_engine.py
+COPY src/core/signal_functions.py /app/signal_functions.py
 
 CMD ["python3","signal_engine.py"]

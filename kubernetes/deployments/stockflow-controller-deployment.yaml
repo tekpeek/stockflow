@@ -14,6 +14,7 @@ spec:
         labels:
           app: stockflow-controller
       spec:
+        serviceAccountName: controller-svc-acc
         containers:
         - name: stockflow-controller
           image: kingaiva/stockflow-controller:dev

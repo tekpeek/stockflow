@@ -14,7 +14,7 @@ RUN python3 -m venv /app/venv
 ENV PATH="/app/venv/bin:$PATH"
 ENV PYTHONUNBUFFERED=1
 
-RUN pip install fastapi uvicorn pandas
+RUN pip install fastapi uvicorn pandas kubernetes
 
 COPY src/api/stockflow_controller.py /app/stockflow_controller.py
 

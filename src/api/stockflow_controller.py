@@ -3,11 +3,11 @@ import uvicorn
 from fastapi.responses import JSONResponse
 import logging
 import sys
-import subprocess
 import time
 from typing import Dict, Any
+from kubernetes import client, config
+from kubernetes.client.rest import ApiException
 
-# Configure logging to print to stdout
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
@@ -16,17 +16,23 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+try:
+    config.load_incluster_config()
+except config.ConfigException:
+    config.load_kube_config()
+
+v1 = client.BatchV1Api()
 stockflow_controller = FastAPI()
 
 def check_cronjob_exists() -> bool:
     try:
-        result = subprocess.run(['kubectl', 'get', 'cronjob', 'signal-check-cronjob'], 
-                              capture_output=True, 
-                              text=True, 
-                              check=True)
+        v1.read_namespaced_cron_job(
+            name="signal-check-cronjob",
+            namespace="default"
+        )
         return True
-    except subprocess.CalledProcessError:
-        logger.error("Cronjob signal-check-cronjob not found")
+    except ApiException as e:
+        logger.error(f"Cronjob not found: {str(e)}")
         return False
 
 @stockflow_controller.get("/admin/trigger-cron")
@@ -42,29 +48,47 @@ async def trigger_cronjob() -> Dict[str, Any]:
         logger.info(f"Triggering manual cronjob on request at {time_string}")
         time_string = time_string.split('.')
         pod_suffix = time_string[0] + "-" + time_string[1]
-        logger.info(f"Creating job from cronjob with suffix - {pod_suffix}")
-        result = subprocess.run(
-            ['kubectl', 'create', 'job', 'sf-cron-api-' + pod_suffix, '--from=cronjob/signal-check-cronjob'],
-            capture_output=True,
-            text=True,
-            check=True
+        job_name = f"sf-cron-api-{pod_suffix}"
+        
+        cronjob = v1.read_namespaced_cron_job(
+            name="signal-check-cronjob",
+            namespace="default"
         )
-        logger.info(f"Command Result: {result.stdout}")
+        
+        job = client.V1Job(
+            metadata=client.V1ObjectMeta(
+                name=job_name,
+                owner_references=[{
+                    "apiVersion": "batch/v1",
+                    "kind": "CronJob",
+                    "name": "signal-check-cronjob",
+                    "uid": cronjob.metadata.uid
+                }]
+            ),
+            spec=cronjob.spec.job_template.spec
+        )
+        
+        created_job = v1.create_namespaced_job(
+            namespace="default",
+            body=job
+        )
+        
+        logger.info(f"Job created successfully from cronjob: {job_name}")
         return JSONResponse(
             status_code=200,
             content={
                 "status": "success",
-                "message": "Cronjob triggered successfully",
-                "job_name": f"sf-cron-api-{pod_suffix}",
-                "details": result.stdout
+                "message": "Job created successfully from cronjob",
+                "job_name": job_name,
+                "details": f"Job {job_name} created in namespace default"
             }
         )
         
-    except subprocess.CalledProcessError as e:
-        logger.error(f"Failed to create job: {e.stderr}")
+    except ApiException as e:
+        logger.error(f"Failed to create job: {str(e)}")
         return JSONResponse(
             status_code=500,
-            content={"status": "error", "detail": f"Failed to create job: {e.stderr}"}
+            content={"status": "error", "detail": f"Failed to create job: {str(e)}"}
         )
     except Exception as e:
         logger.error(f"Unexpected error: {str(e)}")

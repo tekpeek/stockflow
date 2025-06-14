@@ -19,10 +19,18 @@ jobs:
        username: ${{ secrets.DOCKER_USERNAME }}
        password: ${{ secrets.DOCKER_TOKEN }}
 
-    - name: Build and push to dockerhub
+    - name: Build and push signal-engine
       uses: docker/build-push-action@v5
       with:
        context:
-       file: ./Dockerfile.signal-engine
+       file: ./dockerfiles/Dockerfile.signal-engine
        push: true
        tags: kingaiva/signal-engine:dev
+    
+    - name: Build and push stockflow-controller
+      uses: docker/build-push-action@v5
+      with:
+       context:
+       file: ./dockerfiles/Dockerfile.stockflow-controller
+       push: true
+       tags: kingaiva/stockflow-controller:dev

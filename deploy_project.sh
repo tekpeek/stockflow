@@ -1,5 +1,27 @@
 #!/bin/bash
 
+check_deployment() {
+    deployment_name=$1
+    INTERVAL=5
+    TIMEOUT=250
+    ELAPSED=0
+    deployment_status=$(kubectl get deploy $deployment_name -o json | jq -r '.status.conditions[]' | jq -r 'select(.type == "Available").status')
+    while [ $ELAPSED -lt $TIMEOUT ]; do
+        deployment_status=$(kubectl get deploy $deployment_name -o json | jq -r '.status.conditions[]' | jq -r 'select(.type == "Available").status')
+        if [[ "${deployment_status^^}" == "TRUE" ]]; then
+            break
+        fi
+        echo "Waiting for $deployment_name :: Elapsed - $ELAPSED"
+        sleep $INTERVAL
+        ELAPSED=$((ELAPSED + INTERVAL))
+    done
+
+    if [ $ELAPSED -ge $TIMEOUT ]; then
+        echo "Microservice deployment failed. $deployment_name not in running status!"
+        exit 1
+    fi
+}
+
 # Delete and recreate strategy related configuration secret
 kubectl delete secret generic strategy-config --ignore-not-found
 kubectl create secret generic strategy-config \
@@ -10,31 +32,14 @@ kubectl create secret generic strategy-config \
 
 # Delete old deployment and deploy the signal engine server
 kubectl delete deployment signal-engine --ignore-not-found
-kubectl apply -f kubernetes/signal-engine-deployment.yaml
+kubectl apply -f kubernetes/deployments/signal-engine-deployment.yaml
 
 # Verifying if the signal-engine is in running status
-INTERVAL=5
-TIMEOUT=250
-ELAPSED=0
-deployment_status=$(kubectl get deploy signal-engine -o json | jq -r '.status.conditions[]' | jq -r 'select(.type == "Available").status')
-while [ $ELAPSED -lt $TIMEOUT ]; do
-    deployment_status=$(kubectl get deploy signal-engine -o json | jq -r '.status.conditions[]' | jq -r 'select(.type == "Available").status')
-    if [[ "${deployment_status^^}" == "TRUE" ]]; then
-        break
-    fi
-    echo "Waiting for signal-engine :: Elapsed - $ELAPSED"
-    sleep $INTERVAL
-    ELAPSED=$((ELAPSED + INTERVAL))
-done
-
-if [ $ELAPSED -ge $TIMEOUT ]; then
-    echo "Microservice deployment failed. signal-engine not in running status!"
-    exit 1
-fi
+check_deployment "signal-engine"
 
 # Delete the old service and deploy the signal engine service
 kubectl delete service signal-engine-service --ignore-not-found
-kubectl apply -f kubernetes/signal-engine-service.yaml
+kubectl apply -f kubernetes/services/signal-engine-service.yaml
 
 # Delete and recreate smtp-credentials secret
 kubectl delete secret smtp-credentials --ignore-not-found
@@ -53,7 +58,23 @@ kubectl create configmap cronjob-config \
 
 # delete and recreate the cronjob
 kubectl delete cronjob signal-check-cronjob --ignore-not-found
-kubectl apply -f kubernetes/signal-check-cronjob.yaml
+kubectl apply -f kubernetes/cronjobs/signal-check-cronjob.yaml
 
 # create a manual cronjob and check functioning
 kubectl create job signal-check-manual --from=cronjob/signal-check-cronjob
+
+# delete and recreate rbac related service configuration
+kubectl delete clusterrolebinding controller-rolebinding --ignore-not-found
+kubectl delete clusterrole controller-role --ignore-not-found
+kubectl delete serviceaccount controller-svc-acc --ignore-not-found
+
+kubectl apply -f kubernetes/rbac/stockflow-controller-svc-acc.yaml
+kubectl apply -f kubernetes/rbac/svc-acc-cluster-role.yaml
+kubectl apply -f kubernetes/rbac/role-binding.yaml
+
+# Delete and recreate stockflow-controller microservice
+kubectl delete deployment stockflow-controller --ignore-not-found
+kubectl apply -f kubernetes/deployments/stockflow-controller-deployment.yaml
+
+# Verifying if the stockflow-controller is in running status
+check_deployment "stockflow-controller"

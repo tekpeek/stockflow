@@ -9,28 +9,12 @@ def calculate_final_signal(stock_id: str,interval: str,period: int,window: int, 
     bb = calculate_bollinger_bands(stock_id,df,window,num_std)
     return should_buy(rsi, macd, bb)
 
-def calculate_individual(option: str, stock_id: str,interval: str,period: int,window: int, num_std: float):
-    nse_symbol = stock_id.upper()
-    df = yf.download(nse_symbol, period="3mo", interval=interval, progress=False, auto_adjust=False)
-    if option=="rsi":
-        return  calculate_rsi(stock_id,df,period,interval)
-    elif option=="bb":
-        return calculate_bollinger_bands(stock_id,df,window,num_std)
-    elif option=="macd":
-        return calculate_macd_signal(stock_id,df,interval)
-    else:
-        return {"error": "Invalid Strategy option!"}
-
 def should_buy(rsi_result, macd_result, bb_result):
     reasons = []
     buy_signal = False
 
     # RSI condition: oversold or recovering
-    rsi_signal = False
-    if rsi_result['rsi'] < 30 and rsi_result['rsi_smooth'] > rsi_result['rsi']:
-        rsi_signal = True
-    elif rsi_result['rsi'] >= 40 and rsi_result['rsi'] <= 70 and rsi_result['rsi_smooth'] < rsi_result['rsi']:
-        rsi_signal = True
+    if rsi_result['rsi'] < 30 or (rsi_result['rsi'] > 30 and rsi_result['rsi_smooth'] > rsi_result['rsi']):
         reasons.append(f"RSI is low or recovering: RSI={rsi_result['rsi']:.2f}")
     else:
         reasons.append(f"RSI not favorable: RSI={rsi_result['rsi']:.2f}")
@@ -42,28 +26,24 @@ def should_buy(rsi_result, macd_result, bb_result):
         reasons.append("MACD not indicating bullish momentum")
 
     # Bollinger Bands condition: price crossed above middle, squeeze or oversold
-    bb_signal = False
+    bb_buy = False
     if bb_result['crossed_above_middle']:
-        bb_signal = True
+        bb_buy = True
         reasons.append("Price crossed above Bollinger middle band")
     if bb_result['is_squeeze']:
-        bb_signal = True
+        bb_buy = True
         reasons.append("Bollinger Bands in squeeze, potential breakout")
     if bb_result['is_oversold']:
-        bb_signal = True
+        bb_buy = True
         reasons.append("Price near or below lower Bollinger Band (oversold)")
 
-    if not bb_signal:
+    if not bb_buy:
         reasons.append("Bollinger Bands not indicating buy")
 
-    # Combine signals: RSI favorable signal + MACD buy signal + any BB buy signal
-    macd_signal = (macd_result['is_potential_entry'] and ("bullish" in macd_result['trend_strength']))
-    if rsi_signal and macd_signal and bb_signal:
+    # Combine signals: require RSI favorable + MACD bullish + any BB buy signal
+    if (rsi_result['rsi'] < 35) and macd_result['macd_crossed'] and macd_result['histogram_trending_up'] and bb_buy:
         buy_signal = True
         reasons.insert(0, "Strong BUY signal detected based on all indicators")
-    elif (macd_signal and rsi_signal) or (macd_signal and bb_signal) or (rsi_signal and bb_signal):
-        buy_signal = True
-        reasons.insert(0, "Weak bullish signal, monitor the stock and take decision")
     else:
         reasons.insert(0, "No strong BUY signal detected")
 
@@ -114,16 +94,12 @@ def calculate_macd_signal(stock_symbol: str, df, interval: str) -> dict:
 
     m0 = macd.iloc[-1].item() if isinstance(macd.iloc[-1], pd.Series) else macd.iloc[-1]
     m1 = macd.iloc[-2].item() if isinstance(macd.iloc[-2], pd.Series) else macd.iloc[-2]
-    m2 = macd.iloc[-3].item() if isinstance(macd.iloc[-3], pd.Series) else macd.iloc[-3]
-    m3 = macd.iloc[-4].item() if isinstance(macd.iloc[-4], pd.Series) else macd.iloc[-4]
     s0 = signal.iloc[-1].item() if isinstance(signal.iloc[-1], pd.Series) else signal.iloc[-1]
     s1 = signal.iloc[-2].item() if isinstance(signal.iloc[-2], pd.Series) else signal.iloc[-2]
-    s2 = signal.iloc[-3].item() if isinstance(signal.iloc[-3], pd.Series) else signal.iloc[-3]
-    s3 = signal.iloc[-4].item() if isinstance(signal.iloc[-4], pd.Series) else signal.iloc[-4]
     h0 = hist.iloc[-1].item() if isinstance(hist.iloc[-1], pd.Series) else hist.iloc[-1]
 
     # crossover detection
-    prev_above = m1 > s1 and m2 > s2 and m3 > s3
+    prev_above = m1 > s1
     now_above  = m0 > s0
     if not prev_above and now_above:
         crossover = "bullish_crossover"

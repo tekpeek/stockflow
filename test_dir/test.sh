@@ -1,4 +1,4 @@
-export INTERVAL='1d'
+export INTERVAL="1d"
 export PERIOD=14
 export WINDOW=20
 export NUM_STD=2

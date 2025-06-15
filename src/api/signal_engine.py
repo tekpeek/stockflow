@@ -6,6 +6,7 @@ import signal_functions as sf
 import logging
 import sys
 import os
+import numpy as np
 
 # Configure logging to print to stdout
 logging.basicConfig(
@@ -22,6 +23,15 @@ DEFAULT_PERIOD = int(os.getenv("PERIOD"))
 DEFAULT_WINDOW = int(os.getenv("WINDOW"))
 DEFAULT_NUM_STD = float(os.getenv("NUM_STD"))
 
+def convert_bools_to_strings(data):
+    if isinstance(data, dict):
+        return {k: convert_bools_to_strings(v) for k, v in data.items()}
+    elif isinstance(data, list):
+        return [convert_bools_to_strings(item) for item in data]
+    elif isinstance(data, (bool, np.bool_)):  # Handle both Python bool and NumPy bool
+        return str(data)
+    return data
+
 signal_engine = FastAPI()
 
 @signal_engine.get("/{stock_id}")
@@ -37,6 +47,33 @@ def get_stock_data(
     if stock_id.endswith(".NS"):
         try:
             return_data = sf.calculate_final_signal(stock_id,interval,period,window,num_std)
+            if return_data is None:
+                logger.error("Return data is None")
+                return JSONResponse({"error": "No data returned from signal calculation"})
+            return JSONResponse(return_data)
+        except Exception as e:
+            logger.error(f"Error: {str(e)}")
+            return JSONResponse({"error": f"Failed to process stock data: {str(e)}"})
+    else:
+        logger.warning(f"Invalid format: {stock_id}")
+        return JSONResponse({"error": "Incorrect Stock ID. Stock ID must end with .NS"})
+    
+@signal_engine.get("/{stock_id}/{option}")
+def get_stock_data(
+    stock_id: str,
+    option: str = 'rsi',
+    interval: str = DEFAULT_INTERVAL,
+    period: int = DEFAULT_PERIOD,
+    window: int = DEFAULT_WINDOW,
+    num_std: float = DEFAULT_NUM_STD
+):
+    logging.info("Triggering signal-engine for "+stock_id)
+    logging.info(f"Strategy Values: interval: {interval}, period: {period}, window: {window}, num_std: {num_std}")
+    if stock_id.endswith(".NS"):
+        try:
+            return_data = sf.calculate_individual(option,stock_id,interval,period,window,num_std)
+            return_data = convert_bools_to_strings(return_data)
+            print(return_data)
             if return_data is None:
                 logger.error("Return data is None")
                 return JSONResponse({"error": "No data returned from signal calculation"})

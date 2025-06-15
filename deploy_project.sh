@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 check_deployment() {
     deployment_name=$1
     INTERVAL=5
@@ -52,7 +54,7 @@ kubectl create secret generic smtp-credentials \
 # Delete and recreate configmap for cronjob
 kubectl delete configmap cronjob-config --ignore-not-found
 kubectl create configmap cronjob-config \
- --from-file=src/core/top_300_nse_tickers.py \
+ --from-file=src/core/top_500_nse_tickers.py \
  --from-file=src/core/cronjob-execution.py \
  --from-file=src/core/smtp_email_trigger.py
 

@@ -80,3 +80,9 @@ kubectl apply -f kubernetes/deployments/stockflow-controller-deployment.yaml
 
 # Verifying if the stockflow-controller is in running status
 check_deployment "stockflow-controller"
+
+# Apply the clusterIssuer
+kubectl apply -f kubernetes/services/stockflow-clusterissuer.yaml
+
+# Apply ingress service
+kubectl apply -f kubernetes/services/stockflow-ingress.yaml

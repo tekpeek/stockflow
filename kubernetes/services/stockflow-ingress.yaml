@@ -7,7 +7,6 @@ metadata:
     traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
     traefik.ingress.kubernetes.io/router.tls: "true"
     traefik.ingress.kubernetes.io/router.tls.certresolver: default
-    cert-manager.io/cluster-issuer: stockflow-prod
 spec:
   rules:
     - host: tekpeek.duckdns.org

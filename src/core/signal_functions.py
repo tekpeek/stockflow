@@ -24,6 +24,8 @@ def calculate_individual(option: str, stock_id: str,interval: str,period: int,wi
 def should_buy(rsi_result, macd_result, bb_result):
     reasons = []
     buy_signal = False
+    buy_signal_list = []
+    signal_strength = "Weak"
 
     # RSI condition: oversold or recovering
     rsi_signal = False
@@ -67,9 +69,19 @@ def should_buy(rsi_result, macd_result, bb_result):
     else:
         reasons.insert(0, "No strong BUY signal detected")
 
+    if rsi_result:
+        buy_signal_list.append("RSI")
+    if macd_signal:
+        buy_signal_list.append("MACD")
+    if bb_signal:
+        buy_signal_list.append("Bollinger Bands")
+    if len(buy_signal_list) == 3:
+        signal_strength = "Strong"
     return {
         'buy': buy_signal,
-        'reason': "; ".join(reasons)
+        'reason': "; ".join(reasons),
+        'signals': "; ".join(buy_signal_list),
+        'strength': f"{signal_strength}"
     }
 
 def calculate_rsi(stock_symbol: str, df, period: int, interval: str) -> float:

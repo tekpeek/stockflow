@@ -3,17 +3,33 @@ import os
 import smtplib
 from email.message import EmailMessage
 from email.utils import formataddr
+from datetime import datetime
 
 def send_email(stock_list,error_list):
-    subject = "Daily Stock Alert: Buy Signal Detected"
+    current_datetime = datetime.now().strftime("%B %d %Y - %I:%M %p")
+    subject = f"Stockflow Alert: Buy Signal Detected - {current_datetime}"
     sender_addr = "noreply.avinash.s@gmail.com"
     smtp_host = os.getenv("SMTP_HOST")
+    
+    # Format stock details
+    stock_details = ""
+    for stock in stock_list:
+        ticker, signals, strength, reasons = stock
+        stock_details += f"""
+        Stock: {ticker}
+        Signals: {signals}
+        Strength: {strength}
+        Reasons: {reasons}
+        {'-' * 30}
+        """
+    
     body = f"""
     Hello,
 
     Your stock analyzer has identified new buy signals based on today's market data.
 
-    Highlighted Stock(s): {stock_list}
+    Buy Signals Detected:
+    {stock_details}
 
     Errored Stock(s): {error_list}
 

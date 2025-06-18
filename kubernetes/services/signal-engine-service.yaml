@@ -3,7 +3,7 @@ kind: Service
 metadata:
   name: signal-engine-service
 spec:
-  type : NodePort
+  type : ClusterIP
   selector:
     app: signal-engine
   ports:
@@ -11,4 +11,4 @@ spec:
     protocol: TCP
     port: 8000
     targetPort: se-port
-    nodePort: 31000
+    #nodePort: 31000

@@ -3,7 +3,7 @@ kind: Service
 metadata:
   name: sf-ctrl-service
 spec:
-  type : NodePort
+  type : ClusterIP
   selector:
     app: stockflow-controller
   ports:
@@ -11,4 +11,4 @@ spec:
     protocol: TCP
     port: 9000
     targetPort: sc-port
-    nodePort: 32000
+    #nodePort: 32000

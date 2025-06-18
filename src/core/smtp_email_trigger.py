@@ -24,21 +24,21 @@ def send_email(stock_list,error_list):
         """
     
     body = f"""
-    Hello,
+Hello,
 
-    Your stock analyzer has identified new buy signals based on today's market data.
+Your stock analyzer has identified new buy signals based on today's market data.
 
-    Buy Signals Detected:
-    {stock_details}
+Buy Signals Detected:
+{stock_details}
 
-    Errored Stock(s): {error_list}
+Errored Stock(s): {error_list}
 
-    Thank you,
-    Market Tracker
+Thank you,
+Market Tracker
 
-    ---
+---
 
-    This is an automated message. Please do not reply.
+This is an automated message. Please do not reply.
     """
     smtp_user = "noreply.avinash.s@gmail.com"
     smtp_password = os.getenv("SMTP_PASSWORD")

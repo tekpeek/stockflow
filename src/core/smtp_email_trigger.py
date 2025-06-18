@@ -16,11 +16,11 @@ def send_email(stock_list,error_list):
     for stock in stock_list:
         ticker, signals, strength, reasons = stock
         stock_details += f"""
-        Stock: {ticker}
-        Signals: {signals}
-        Strength: {strength}
-        Reasons: {reasons}
-        {'-' * 30}
+Stock: {ticker}
+Signals: {signals}
+Strength: {strength}
+Reasons: {reasons}
+{'-' * 30}
         """
     
     body = f"""

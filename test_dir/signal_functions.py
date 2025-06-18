@@ -3,7 +3,7 @@ import pandas as pd
 
 def calculate_final_signal(stock_id: str,interval: str,period: int,window: int, num_std: float):
     nse_symbol = stock_id.upper()
-    df = yf.download(nse_symbol, period="1y", interval=interval, progress=False, auto_adjust=False) 
+    df = yf.download(nse_symbol, period="2y", interval=interval, progress=False, auto_adjust=False) 
     rsi = calculate_rsi(stock_id,df,period,interval)
     macd = calculate_macd_signal(stock_id,df,interval)
     bb = calculate_bollinger_bands(stock_id,df,window,num_std)
@@ -11,7 +11,7 @@ def calculate_final_signal(stock_id: str,interval: str,period: int,window: int, 
 
 def calculate_individual(option: str, stock_id: str,interval: str,period: int,window: int, num_std: float):
     nse_symbol = stock_id.upper()
-    df = yf.download(nse_symbol, period="1y", interval=interval, progress=False, auto_adjust=False)
+    df = yf.download(nse_symbol, period="2y", interval=interval, progress=False, auto_adjust=False)
     if option=="rsi":
         return  calculate_rsi(stock_id,df,period,interval)
     elif option=="bb":

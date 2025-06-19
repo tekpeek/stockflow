@@ -245,3 +245,131 @@ def calculate_bollinger_bands(stock_symbol: str, df, window: int, num_std: float
         'crossed_above_middle': crossed_above_middle,
         'crossed_below_middle': crossed_below_middle,
     }
+
+def backtest_prediction_accuracy(stock_id: str, interval: str, period: int, window: int, num_std: float, growth_threshold: float = 0.05, lookahead: int = 10):
+    nse_symbol = stock_id.upper()
+    df = yf.download(nse_symbol, period="2y", interval=interval, progress=False, auto_adjust=False)
+    results = []
+    min_lookback = max(period, window, 14)
+    correct = 0
+    total_signals = 0
+    for i in range(min_lookback, len(df) - lookahead):
+        df_slice = df.iloc[:i+1]
+        rsi = calculate_rsi(stock_id, df_slice, period, interval)
+        macd = calculate_macd_signal(stock_id, df_slice, interval)
+        bb = calculate_bollinger_bands(stock_id, df_slice, window, num_std)
+        signal = should_buy(rsi, macd, bb)
+        print(signal)
+        if signal['buy']:
+            print("Entered condition")
+            total_signals += 1
+            buy_price = df['Close'].iloc[i]
+            future_prices = df['Close'].iloc[i+1:i+1+lookahead]
+            max_future_price = future_prices.max()
+            max_future_price=max_future_price[stock_id]
+            buy_price = buy_price[stock_id]
+            growth = (max_future_price - buy_price) / buy_price
+            print(f"Growth: {growth}")
+            success = growth >= growth_threshold
+            print(success)
+            if success:
+                print("Entered condition 2")
+                print(df.index[i])
+                print(max_future_price)
+                print(buy_price)
+                correct += 1
+            results.append({
+                'date': str(df.index[i]),
+                'buy_price': buy_price,
+                'max_future_price': max_future_price,
+                'growth': growth,
+                'success': str(success),
+                'reason': signal['reason'],
+                'strength': signal['strength'],
+                'signals': signal['signals']
+            })
+    accuracy = correct / total_signals if total_signals > 0 else 0
+    summary = {
+        'total_signals': total_signals,
+        'correct_predictions': correct,
+        'accuracy': accuracy,
+        'details': results
+    }
+    return summary
+
+def backtest_prediction_single_accuracy(option: str,stock_id: str, interval: str, period: int, window: int, num_std: float, growth_threshold: float = 0.013, lookahead: int = 10):
+    nse_symbol = stock_id.upper()
+    df = yf.download(nse_symbol, period="2y", interval=interval, progress=False, auto_adjust=False)
+    results = []
+    min_lookback = max(period, window, 14)
+    correct = 0
+    total_signals = 0
+    for i in range(min_lookback, len(df) - lookahead):
+        df_slice = df.iloc[:i+1]
+        signal=False
+        if option=="rsi":
+            rsi_result = calculate_rsi(stock_id, df_slice, period, interval)
+            rsi_signal = False
+            if rsi_result['rsi'] < 30 and rsi_result['rsi_smooth'] > rsi_result['rsi']:
+                rsi_signal = True
+            elif rsi_result['rsi'] >= 40 and rsi_result['rsi'] <= 70 and rsi_result['rsi_smooth'] < rsi_result['rsi']:
+                rsi_signal = True
+            signal = rsi_result
+        elif option=="macd":
+            macd_result = calculate_macd_signal(stock_id, df_slice, interval)
+            macd_signal = (macd_result['is_potential_entry'] and ("bullish" in macd_result['trend_strength']))
+            signal=macd_signal
+        elif option=="bb":
+            bb_result = calculate_bollinger_bands(stock_id, df_slice, window, num_std)
+            bb_signal = False
+            if bb_result['crossed_above_middle']:
+                bb_signal = True
+            if bb_result['is_squeeze']:
+                bb_signal = True
+            if bb_result['is_oversold']:
+                bb_signal = True
+            signal=bb_signal
+        #signal = should_buy(rsi, macd, bb)
+        signal={
+        'buy': signal,
+        'reason': ";",
+        'signals': ";",
+        'strength': ";"
+    }
+        print(signal)
+        if signal['buy']:
+            print("Entered condition")
+            total_signals += 1
+            buy_price = df['Close'].iloc[i]
+            future_prices = df['Close'].iloc[i+1:i+1+lookahead]
+            max_future_price = future_prices.max()
+            max_future_price=max_future_price[stock_id]
+            buy_price = buy_price[stock_id]
+            growth = (max_future_price - buy_price) / buy_price
+            print(f"Growth: {growth}")
+            success = growth >= growth_threshold
+            print(success)
+            if success:
+                print("Entered condition 2")
+                print(df.index[i])
+                print(max_future_price)
+                print(buy_price)
+                correct += 1
+            results.append({
+                'date': str(df.index[i]),
+                'buy_price': buy_price,
+                'max_future_price': max_future_price,
+                'growth': growth,
+                'success': str(success),
+                'reason': signal['reason'],
+                'strength': signal['strength'],
+                'signals': signal['signals']
+            })
+    accuracy = correct / total_signals if total_signals > 0 else 0
+    summary = {
+        'total_signals': total_signals,
+        'correct_predictions': correct,
+        'accuracy': accuracy,
+        'details': results
+    }
+    return summary

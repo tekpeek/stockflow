@@ -34,6 +34,55 @@ def convert_bools_to_strings(data):
 
 signal_engine = FastAPI()
 
+@signal_engine.get("/backtest/{stock_id}")
+def backtest(
+    stock_id: str,
+    interval: str = DEFAULT_INTERVAL,
+    period: int = DEFAULT_PERIOD,
+    window: int = DEFAULT_WINDOW,
+    num_std: float = DEFAULT_NUM_STD
+):
+    logging.info("Triggering signal-engine for "+stock_id)
+    logging.info(f"Strategy Values: interval: {interval}, period: {period}, window: {window}, num_std: {num_std}")
+    if stock_id.endswith(".NS"):
+        try:
+            return_data = sf.backtest_prediction_accuracy(stock_id,interval,period,window,num_std)
+            if return_data is None:
+                logger.error("Return data is None")
+                return JSONResponse({"error": "No data returned from signal calculation"})
+            return JSONResponse(return_data)
+        except Exception as e:
+            logger.error(f"Error: {str(e)}")
+            return JSONResponse({"error": f"Failed to process stock data: {str(e)}"})
+    else:
+        logger.warning(f"Invalid format: {stock_id}")
+        return JSONResponse({"error": "Incorrect Stock ID. Stock ID must end with .NS"})
+    
+@signal_engine.get("/backtest/{stock_id}/{option}")
+def backtest(
+    stock_id: str,
+    option: str,
+    interval: str = DEFAULT_INTERVAL,
+    period: int = DEFAULT_PERIOD,
+    window: int = DEFAULT_WINDOW,
+    num_std: float = DEFAULT_NUM_STD
+):
+    logging.info("Triggering signal-engine for "+stock_id)
+    logging.info(f"Strategy Values: interval: {interval}, period: {period}, window: {window}, num_std: {num_std}")
+    if stock_id.endswith(".NS"):
+        try:
+            return_data = sf.backtest_prediction_single_accuracy(option,stock_id,interval,period,window,num_std)
+            if return_data is None:
+                logger.error("Return data is None")
+                return JSONResponse({"error": "No data returned from signal calculation"})
+            return JSONResponse(return_data)
+        except Exception as e:
+            logger.error(f"Error: {str(e)}")
+            return JSONResponse({"error": f"Failed to process stock data: {str(e)}"})
+    else:
+        logger.warning(f"Invalid format: {stock_id}")
+        return JSONResponse({"error": "Incorrect Stock ID. Stock ID must end with .NS"})
+
 @signal_engine.get("/{stock_id}")
 def get_stock_data(
     stock_id: str,

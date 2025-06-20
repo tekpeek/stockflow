@@ -7,7 +7,8 @@ def calculate_final_signal(stock_id: str,interval: str,period: int,window: int, 
     rsi = calculate_rsi(stock_id,df,period,interval)
     macd = calculate_macd_signal(stock_id,df,interval)
     bb = calculate_bollinger_bands(stock_id,df,window,num_std)
-    return should_buy(rsi, macd, bb)
+    cmf = calculate_cmf(stock_id,df,period,interval,window)
+    return should_buy(rsi, macd, bb, cmf)
 
 def calculate_individual(option: str, stock_id: str,interval: str,period: int,window: int, num_std: float):
     nse_symbol = stock_id.upper()
@@ -18,10 +19,12 @@ def calculate_individual(option: str, stock_id: str,interval: str,period: int,wi
         return calculate_bollinger_bands(stock_id,df,window,num_std)
     elif option=="macd":
         return calculate_macd_signal(stock_id,df,interval)
+    elif option=="cmf":
+        return calculate_cmf(stock_id,df,period,interval,window)
     else:
         return {"error": "Invalid Strategy option!"}
 
-def should_buy(rsi_result, macd_result, bb_result):
+def should_buy(rsi_result, macd_result, bb_result, cmf_result):
     reasons = []
     buy_signal = False
     buy_signal_list = []
@@ -58,14 +61,20 @@ def should_buy(rsi_result, macd_result, bb_result):
     if not bb_signal:
         reasons.append("Bollinger Bands not indicating buy")
 
+    cmf_signal = False
+    if float(cmf_result['latest_cmf']) > 0:
+        cmf_signal = True
+        reasons.append("CMF Value is positive")
+
     # Combine signals: RSI favorable signal + MACD buy signal + any BB buy signal
     macd_signal = (macd_result['is_potential_entry'] and ("bullish" in macd_result['trend_strength']))
-    if rsi_signal and macd_signal and bb_signal:
+    if rsi_signal and macd_signal and bb_signal and cmf_signal:
         buy_signal = True
         reasons.insert(0, "Strong BUY signal detected based on all indicators")
     elif (macd_signal and rsi_signal) or (macd_signal and bb_signal) or (rsi_signal and bb_signal):
-        buy_signal = True
-        reasons.insert(0, "Weak bullish signal, monitor the stock and take decision")
+        if cmf_signal:
+            buy_signal = True
+            reasons.insert(0, "Weak bullish signal, monitor the stock and take decision")
     else:
         reasons.insert(0, "No strong BUY signal detected")
 
@@ -75,7 +84,9 @@ def should_buy(rsi_result, macd_result, bb_result):
         buy_signal_list.append("MACD")
     if bb_signal:
         buy_signal_list.append("Bollinger Bands")
-    if len(buy_signal_list) == 3:
+    if cmf_signal:
+        buy_signal_list.append("CMF")
+    if len(buy_signal_list) >= 3:
         signal_strength = "Strong"
     return {
         'buy': buy_signal,
@@ -244,4 +255,19 @@ def calculate_bollinger_bands(stock_symbol: str, df, window: int, num_std: float
         'price': price,
         'crossed_above_middle': crossed_above_middle,
         'crossed_below_middle': crossed_below_middle,
+    }
+
+def calculate_cmf(stock_symbol: str,df, period: str, interval: str, window: int = 20):
+    df.columns = df.columns.get_level_values(0)
+    print(df.columns)
+    df.dropna(subset=['High', 'Low', 'Close', 'Volume'], inplace=True)
+    mf_multiplier = ((df['Close'] - df['Low']) - (df['High'] - df['Close'])) / (df['High'] - df['Low'])
+    mf_multiplier.replace([float('inf'), -float('inf')], 0, inplace=True)  # handle division by zero
+    mf_volume = mf_multiplier * df['Volume']
+    df['CMF'] = mf_volume.rolling(window=window).sum() / df['Volume'].rolling(window=window).sum()
+    #slope = np.polyfit(np.arange(len(df['CMF'].dropna().values[-2:])), df['CMF'].dropna().values[-2:], 1)[0]
+    latest_cmf = df['CMF'].dropna().iloc[-1]
+    return {
+        'latest_cmf': f"{latest_cmf}"
+        #'slope': f"{slope}"
     }

@@ -44,7 +44,7 @@ kubectl delete service signal-engine-service --ignore-not-found
 kubectl apply -f kubernetes/services/signal-engine-service.yaml
 
 # Delete and recreate smtp-credentials secret
-if [[ -z "${SMTP_PASSWORD}" ]]; then
+if [[ ! -z "${SMTP_PASSWORD}" ]]; then
 
     kubectl delete secret smtp-credentials --ignore-not-found
     kubectl create secret generic smtp-credentials \

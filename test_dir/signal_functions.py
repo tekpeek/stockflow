@@ -1,5 +1,6 @@
 import yfinance as yf
 import pandas as pd
+import numpy as np
 
 def calculate_final_signal(stock_id: str,interval: str,period: int,window: int, num_std: float):
     nse_symbol = stock_id.upper()
@@ -18,6 +19,8 @@ def calculate_individual(option: str, stock_id: str,interval: str,period: int,wi
         return calculate_bollinger_bands(stock_id,df,window,num_std)
     elif option=="macd":
         return calculate_macd_signal(stock_id,df,interval)
+    elif option=="cmf":
+        return calculate_cmf(stock_id,df,period,interval,window)
     else:
         return {"error": "Invalid Strategy option!"}
 
@@ -109,6 +112,24 @@ def calculate_rsi(stock_symbol: str, df, period: int, interval: str) -> float:
         'rsi': round(float(latest_rsi[stock_symbol]), 2),
         'rsi_smooth': round(float(rsi_smooth[stock_symbol]), 2)
     }
+
+def calculate_cmf(stock_symbol: str,df, period: str, interval: str, window: int = 20):
+    df.columns = df.columns.get_level_values(0)
+    print(df.columns)
+    df.dropna(subset=['High', 'Low', 'Close', 'Volume'], inplace=True)
+    mf_multiplier = ((df['Close'] - df['Low']) - (df['High'] - df['Close'])) / (df['High'] - df['Low'])
+    print("qe")
+    mf_multiplier.replace([float('inf'), -float('inf')], 0, inplace=True)  # handle division by zero
+    mf_volume = mf_multiplier * df['Volume']
+    df['CMF'] = mf_volume.rolling(window=window).sum() / df['Volume'].rolling(window=window).sum()
+    print("qe")
+    #slope = np.polyfit(np.arange(len(df['CMF'].dropna().values[-2:])), df['CMF'].dropna().values[-2:], 1)[0]
+    latest_cmf = df['CMF'].dropna().iloc[-1]
+    print("qe")
+    return {
+        'latest_cmf': f"{latest_cmf}"
+        #'slope': f"{slope}"
+        }
 
 def calculate_macd_signal(stock_symbol: str, df, interval: str) -> dict:
     symbol = stock_symbol.upper()
@@ -297,7 +318,7 @@ def backtest_prediction_accuracy(stock_id: str, interval: str, period: int, wind
     }
     return summary
 
-def backtest_prediction_single_accuracy(option: str,stock_id: str, interval: str, period: int, window: int, num_std: float, growth_threshold: float = 0.013, lookahead: int = 10):
+def backtest_prediction_single_accuracy(option: str,stock_id: str, interval: str, period: int, window: int, num_std: float, growth_threshold: float = 0.005, lookahead: int = 10):
     nse_symbol = stock_id.upper()
     df = yf.download(nse_symbol, period="2y", interval=interval, progress=False, auto_adjust=False)
     results = []
@@ -329,14 +350,21 @@ def backtest_prediction_single_accuracy(option: str,stock_id: str, interval: str
             if bb_result['is_oversold']:
                 bb_signal = True
             signal=bb_signal
+        elif option=="cmf":
+            cmf_result = calculate_cmf(stock_id,df_slice,period,interval,window)
+            cmf_signal=False
+            print(float(cmf_result['latest_cmf']))
+            if float(cmf_result['latest_cmf']) > 0:
+                cmf_signal=True
+            signal=cmf_signal
         #signal = should_buy(rsi, macd, bb)
         signal={
         'buy': signal,
         'reason': ";",
         'signals': ";",
         'strength': ";"
-    }
-        print(signal)
+        }
+        print(f"Signal is {signal}")
         if signal['buy']:
             print("Entered condition")
             total_signals += 1

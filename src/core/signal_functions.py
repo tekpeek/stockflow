@@ -65,6 +65,8 @@ def should_buy(rsi_result, macd_result, bb_result, cmf_result):
     if float(cmf_result['latest_cmf']) > 0:
         cmf_signal = True
         reasons.append("CMF Value is positive")
+    else:
+        reasons.append("CMF value is negative")
 
     # Combine signals: RSI favorable signal + MACD buy signal + any BB buy signal
     macd_signal = (macd_result['is_potential_entry'] and ("bullish" in macd_result['trend_strength']))

@@ -24,7 +24,7 @@ def calculate_individual(option: str, stock_id: str,interval: str,period: int,wi
     else:
         return {"error": "Invalid Strategy option!"}
 
-def should_buy(rsi_result, macd_result, bb_result):
+def should_buy(rsi_result, macd_result, bb_result,cmf_result):
     reasons = []
     buy_signal = False
     buy_signal_list = []
@@ -61,14 +61,22 @@ def should_buy(rsi_result, macd_result, bb_result):
     if not bb_signal:
         reasons.append("Bollinger Bands not indicating buy")
 
+    cmf_signal = False
+    if float(cmf_result['latest_cmf']) > 0:
+        cmf_signal = True
+        reasons.append("CMF Value is positive")
+    else:
+        reasons.append("CMF value is negative")
+
     # Combine signals: RSI favorable signal + MACD buy signal + any BB buy signal
     macd_signal = (macd_result['is_potential_entry'] and ("bullish" in macd_result['trend_strength']))
-    if rsi_signal and macd_signal and bb_signal:
+    if rsi_signal and macd_signal and bb_signal and cmf_signal:
         buy_signal = True
         reasons.insert(0, "Strong BUY signal detected based on all indicators")
     elif (macd_signal and rsi_signal) or (macd_signal and bb_signal) or (rsi_signal and bb_signal):
-        buy_signal = True
-        reasons.insert(0, "Weak bullish signal, monitor the stock and take decision")
+        if cmf_signal:
+            buy_signal = True
+            reasons.insert(0, "Weak bullish signal, monitor the stock and take decision")
     else:
         reasons.insert(0, "No strong BUY signal detected")
 
@@ -78,8 +86,12 @@ def should_buy(rsi_result, macd_result, bb_result):
         buy_signal_list.append("MACD")
     if bb_signal:
         buy_signal_list.append("Bollinger Bands")
-    if len(buy_signal_list) == 3:
+    if cmf_signal:
+        buy_signal_list.append("CMF")
+    if len(buy_signal_list) >= 3:
         signal_strength = "Strong"
+    else:
+        buy_signal = False
     return {
         'buy': buy_signal,
         'reason': "; ".join(reasons),
@@ -279,7 +291,8 @@ def backtest_prediction_accuracy(stock_id: str, interval: str, period: int, wind
         rsi = calculate_rsi(stock_id, df_slice, period, interval)
         macd = calculate_macd_signal(stock_id, df_slice, interval)
         bb = calculate_bollinger_bands(stock_id, df_slice, window, num_std)
-        signal = should_buy(rsi, macd, bb)
+        cmf = calculate_cmf(stock_id,df_slice,period,interval,window)
+        signal = should_buy(rsi, macd, bb, cmf)
         print(signal)
         if signal['buy']:
             print("Entered condition")

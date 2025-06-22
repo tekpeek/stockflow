@@ -44,12 +44,15 @@ kubectl delete service signal-engine-service --ignore-not-found
 kubectl apply -f kubernetes/services/signal-engine-service.yaml
 
 # Delete and recreate smtp-credentials secret
-kubectl delete secret smtp-credentials --ignore-not-found
-kubectl create secret generic smtp-credentials \
-    --from-literal=smtp-password="${SMTP_PASSWORD}" \
-    --from-literal=smtp-user="noreply.avinash.s@gmail.com" \
-    --from-literal=smtp-port="587" \
-    --from-literal=smtp-host="smtp.gmail.com"
+if [[ ! -z "${SMTP_PASSWORD}" ]]; then
+
+    kubectl delete secret smtp-credentials --ignore-not-found
+    kubectl create secret generic smtp-credentials \
+        --from-literal=smtp-password="${SMTP_PASSWORD}" \
+        --from-literal=smtp-user="noreply.avinash.s@gmail.com" \
+        --from-literal=smtp-port="587" \
+        --from-literal=smtp-host="smtp.gmail.com"
+fi
 
 # Delete and recreate configmap for cronjob
 kubectl delete configmap cronjob-config --ignore-not-found

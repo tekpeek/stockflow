@@ -1,29 +1,15 @@
 import yfinance as yf
 import pandas as pd
+import numpy as np
 
 def calculate_final_signal(stock_id: str,interval: str,period: int,window: int, num_std: float):
     nse_symbol = stock_id.upper()
-    df = yf.download(nse_symbol, period="1y", interval=interval, progress=False, auto_adjust=False) 
+    df = yf.download(nse_symbol, period="2y", interval=interval, progress=False, auto_adjust=False) 
     rsi = calculate_rsi(stock_id,df,period,interval)
     macd = calculate_macd_signal(stock_id,df,interval)
     bb = calculate_bollinger_bands(stock_id,df,window,num_std)
     cmf = calculate_cmf(stock_id,df,period,interval,window)
-    return signal_aggregator_v2(rsi, macd, bb, cmf)
-    #return should_buy(rsi, macd, bb, cmf)
-
-def calculate_individual(option: str, stock_id: str,interval: str,period: int,window: int, num_std: float):
-    nse_symbol = stock_id.upper()
-    df = yf.download(nse_symbol, period="1y", interval=interval, progress=False, auto_adjust=False)
-    if option=="rsi":
-        return  calculate_rsi(stock_id,df,period,interval)
-    elif option=="bb":
-        return calculate_bollinger_bands(stock_id,df,window,num_std)
-    elif option=="macd":
-        return calculate_macd_signal(stock_id,df,interval)
-    elif option=="cmf":
-        return calculate_cmf(stock_id,df,period,interval,window)
-    else:
-        return {"error": "Invalid Strategy option!"}
+    return signal_aggregator_v2(rsi, macd, bb,cmf)
 
 def signal_aggregator_v2(rsi_result, macd_result, bb_result,cmf_result):
     reasons = []
@@ -44,13 +30,14 @@ def signal_aggregator_v2(rsi_result, macd_result, bb_result,cmf_result):
             if float(macd_result['macd']) >= float(macd_result['signal']) or float(macd_result['histogram']) >= 0:
                 reasons.append("Trend confirmation is positive")
                 signal_strength = "Strong"
+                #buy_signal = True
             else:
                 reasons.append("Trend confirmation is negative")
         else:
             reasons.append("Volume confirmation is negative")
     else:
         reasons.append("Price volatility is not favorable")
-    
+    print("aggregation completed")
     return {
         'buy': buy_signal,
         'reason': "; ".join(reasons),
@@ -58,7 +45,21 @@ def signal_aggregator_v2(rsi_result, macd_result, bb_result,cmf_result):
         'strength': f"{signal_strength}"
     }
 
-def should_buy(rsi_result, macd_result, bb_result, cmf_result):
+def calculate_individual(option: str, stock_id: str,interval: str,period: int,window: int, num_std: float):
+    nse_symbol = stock_id.upper()
+    df = yf.download(nse_symbol, period="2y", interval=interval, progress=False, auto_adjust=False)
+    if option=="rsi":
+        return  calculate_rsi(stock_id,df,period,interval)
+    elif option=="bb":
+        return calculate_bollinger_bands(stock_id,df,window,num_std)
+    elif option=="macd":
+        return calculate_macd_signal(stock_id,df,interval)
+    elif option=="cmf":
+        return calculate_cmf(stock_id,df,period,interval,window)
+    else:
+        return {"error": "Invalid Strategy option!"}
+
+def should_buy(rsi_result, macd_result, bb_result,cmf_result):
     reasons = []
     buy_signal = False
     buy_signal_list = []
@@ -124,6 +125,8 @@ def should_buy(rsi_result, macd_result, bb_result, cmf_result):
         buy_signal_list.append("CMF")
     if len(buy_signal_list) >= 3:
         signal_strength = "Strong"
+    else:
+        buy_signal = False
     return {
         'buy': buy_signal,
         'reason': "; ".join(reasons),
@@ -156,6 +159,19 @@ def calculate_rsi(stock_symbol: str, df, period: int, interval: str) -> float:
         'rsi': round(float(latest_rsi[stock_symbol]), 2),
         'rsi_smooth': round(float(rsi_smooth[stock_symbol]), 2)
     }
+
+def calculate_cmf(stock_symbol: str,df, period: str, interval: str, window: int = 20):
+    df.columns = df.columns.get_level_values(0)
+    print(df.columns)
+    df.dropna(subset=['High', 'Low', 'Close', 'Volume'], inplace=True)
+    mf_multiplier = ((df['Close'] - df['Low']) - (df['High'] - df['Close'])) / (df['High'] - df['Low'])
+    mf_multiplier.replace([float('inf'), -float('inf')], 0, inplace=True)  # handle division by zero
+    mf_volume = mf_multiplier * df['Volume']
+    df['CMF'] = mf_volume.rolling(window=window).sum() / df['Volume'].rolling(window=window).sum()
+    latest_cmf = df['CMF'].dropna().iloc[-1]
+    return {
+        'latest_cmf': f"{latest_cmf}"
+        }
 
 def calculate_macd_signal(stock_symbol: str, df, interval: str) -> dict:
     symbol = stock_symbol.upper()
@@ -291,19 +307,4 @@ def calculate_bollinger_bands(stock_symbol: str, df, window: int, num_std: float
         'price': price,
         'crossed_above_middle': crossed_above_middle,
         'crossed_below_middle': crossed_below_middle,
-    }
-
-def calculate_cmf(stock_symbol: str,df, period: str, interval: str, window: int = 20):
-    df.columns = df.columns.get_level_values(0)
-    print(df.columns)
-    df.dropna(subset=['High', 'Low', 'Close', 'Volume'], inplace=True)
-    mf_multiplier = ((df['Close'] - df['Low']) - (df['High'] - df['Close'])) / (df['High'] - df['Low'])
-    mf_multiplier.replace([float('inf'), -float('inf')], 0, inplace=True)  # handle division by zero
-    mf_volume = mf_multiplier * df['Volume']
-    df['CMF'] = mf_volume.rolling(window=window).sum() / df['Volume'].rolling(window=window).sum()
-    #slope = np.polyfit(np.arange(len(df['CMF'].dropna().values[-2:])), df['CMF'].dropna().values[-2:], 1)[0]
-    latest_cmf = df['CMF'].dropna().iloc[-1]
-    return {
-        'latest_cmf': f"{latest_cmf}"
-        #'slope': f"{slope}"
     }

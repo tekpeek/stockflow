@@ -1,0 +1,7 @@
+RSI ACCURACY : {"final_accuracy":"0.5944420401854714","total_signals":"161750"}
+MACD ACCURACY : {"final_accuracy":"0.5936867182846932","total_signals":"25185"}
+CMF ACCURACY : {"final_accuracy":"0.6009602890767117","total_signals":"80809"}
+BB ACCURACY : {"final_accuracy":"0.6036198299909944","total_signals":"45527"}
+
+AGGREGATOR 2 ACCURACY : {"final_accuracy": "0.753014702936581","total_signals": "24961"}
+

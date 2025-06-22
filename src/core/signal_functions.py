@@ -8,7 +8,8 @@ def calculate_final_signal(stock_id: str,interval: str,period: int,window: int, 
     macd = calculate_macd_signal(stock_id,df,interval)
     bb = calculate_bollinger_bands(stock_id,df,window,num_std)
     cmf = calculate_cmf(stock_id,df,period,interval,window)
-    return should_buy(rsi, macd, bb, cmf)
+    return signal_aggregator_v2(rsi, macd, bb, cmf)
+    #return should_buy(rsi, macd, bb, cmf)
 
 def calculate_individual(option: str, stock_id: str,interval: str,period: int,window: int, num_std: float):
     nse_symbol = stock_id.upper()
@@ -23,6 +24,39 @@ def calculate_individual(option: str, stock_id: str,interval: str,period: int,wi
         return calculate_cmf(stock_id,df,period,interval,window)
     else:
         return {"error": "Invalid Strategy option!"}
+
+def signal_aggregator_v2(rsi_result, macd_result, bb_result,cmf_result):
+    reasons = []
+    buy_signal = False
+    buy_signal_list = []
+    signal_strength = "Weak"
+
+    # proce volatility calculation
+    pv_one = (bb_result['price'] - bb_result['lower_band']) / bb_result['lower_band'] <= 0.02
+    pv_two = rsi_result['rsi'] <= 35
+    price_volatility = (pv_one or pv_two)
+
+    if price_volatility:
+        reasons.append("Price volatility is favorable")
+        if float(cmf_result['latest_cmf']) >= 0 or float(cmf_result['latest_cmf']) > -0.2:
+            reasons.append("Volume confirmation is positive")
+            buy_signal = True
+            if float(macd_result['macd']) >= float(macd_result['signal']) or float(macd_result['histogram']) >= 0:
+                reasons.append("Trend confirmation is positive")
+                signal_strength = "Strong"
+            else:
+                reasons.append("Trend confirmation is negative")
+        else:
+            reasons.append("Volume confirmation is negative")
+    else:
+        reasons.append("Price volatility is not favorable")
+    
+    return {
+        'buy': buy_signal,
+        'reason': "; ".join(reasons),
+        'signals': "; ".join(buy_signal_list),
+        'strength': f"{signal_strength}"
+    }
 
 def should_buy(rsi_result, macd_result, bb_result, cmf_result):
     reasons = []

@@ -7,7 +7,7 @@ import logging
 import sys
 import os
 import numpy as np
-
+from backtest_functions import calculate_bulk_backtest, calculate_bulk_backtest_overall, backtest_prediction_accuracy, backtest_prediction_single_accuracy
 # Configure logging to print to stdout
 logging.basicConfig(
     level=logging.INFO,
@@ -33,6 +33,42 @@ def convert_bools_to_strings(data):
     return data
 
 signal_engine = FastAPI()
+
+@signal_engine.get("/backtest")
+def backtest():
+    logging.info("Backtesting for all")
+    if True:
+        try:
+            return_data = calculate_bulk_backtest_overall()
+            if return_data is None:
+                logger.error("Return data is None")
+                return JSONResponse({"error": "No data returned from signal calculation"})
+            return JSONResponse(return_data)
+        except Exception as e:
+            logger.error(f"Error: {str(e)}")
+            return JSONResponse({"error": f"Failed to process stock data: {str(e)}"})
+    else:
+        logger.warning(f"Invalid format: {option}")
+        return JSONResponse({"error": "Incorrect Stock ID. Stock ID must end with .NS"})
+
+@signal_engine.get("/backtest/ind/{option}")
+def backtest(
+    option: str,
+):
+    logging.info("Backtesting for "+option)
+    if option in ["rsi","macd","bb","cmf"]:
+        try:
+            return_data = calculate_bulk_backtest(option)
+            if return_data is None:
+                logger.error("Return data is None")
+                return JSONResponse({"error": "No data returned from signal calculation"})
+            return JSONResponse(return_data)
+        except Exception as e:
+            logger.error(f"Error: {str(e)}")
+            return JSONResponse({"error": f"Failed to process stock data: {str(e)}"})
+    else:
+        logger.warning(f"Invalid format: {option}")
+        return JSONResponse({"error": "Incorrect Stock ID. Stock ID must end with .NS"})
 
 @signal_engine.get("/backtest/{stock_id}")
 def backtest(
@@ -136,4 +172,4 @@ def get_stock_data(
 
 if __name__ == "__main__":
     logger.info("Starting up signal-engine server")
-    uvicorn.run("signal_engine:signal_engine", host="0.0.0.0", port=8001, log_level="info")
+    uvicorn.run("signal_engine:signal_engine", host="0.0.0.0", port=8001, log_level="info",reload=True)

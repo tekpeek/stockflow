@@ -8,7 +8,42 @@ def calculate_final_signal(stock_id: str,interval: str,period: int,window: int, 
     rsi = calculate_rsi(stock_id,df,period,interval)
     macd = calculate_macd_signal(stock_id,df,interval)
     bb = calculate_bollinger_bands(stock_id,df,window,num_std)
-    return should_buy(rsi, macd, bb)
+    cmf = calculate_cmf(stock_id,df,period,interval,window)
+    return should_buy(rsi, macd, bb,cmf)
+
+def signal_aggregator_v2(rsi_result, macd_result, bb_result,cmf_result):
+    reasons = []
+    buy_signal = False
+    buy_signal_list = []
+    signal_strength = "Weak"
+
+    # proce volatility calculation
+    pv_one = (bb_result['price'] - bb_result['lower_band']) / bb_result['lower_band'] <= 0.02
+    pv_two = rsi_result['rsi'] <= 35
+    price_volatility = (pv_one or pv_two)
+
+    if price_volatility:
+        reasons.append("Price volatility is favorable")
+        if float(cmf_result['latest_cmf']) >= 0 or float(cmf_result['latest_cmf']) > -0.2:
+            reasons.append("Volume confirmation is positive")
+            buy_signal = True
+            if float(macd_result['macd']) >= float(macd_result['signal']) or float(macd_result['histogram']) >= 0:
+                reasons.append("Trend confirmation is positive")
+                signal_strength = "Strong"
+                #buy_signal = True
+            else:
+                reasons.append("Trend confirmation is negative")
+        else:
+            reasons.append("Volume confirmation is negative")
+    else:
+        reasons.append("Price volatility is not favorable")
+    
+    return {
+        'buy': buy_signal,
+        'reason': "; ".join(reasons),
+        'signals': "; ".join(buy_signal_list),
+        'strength': f"{signal_strength}"
+    }
 
 def calculate_individual(option: str, stock_id: str,interval: str,period: int,window: int, num_std: float):
     nse_symbol = stock_id.upper()
@@ -130,14 +165,11 @@ def calculate_cmf(stock_symbol: str,df, period: str, interval: str, window: int 
     print(df.columns)
     df.dropna(subset=['High', 'Low', 'Close', 'Volume'], inplace=True)
     mf_multiplier = ((df['Close'] - df['Low']) - (df['High'] - df['Close'])) / (df['High'] - df['Low'])
-    print("qe")
     mf_multiplier.replace([float('inf'), -float('inf')], 0, inplace=True)  # handle division by zero
     mf_volume = mf_multiplier * df['Volume']
     df['CMF'] = mf_volume.rolling(window=window).sum() / df['Volume'].rolling(window=window).sum()
-    print("qe")
     #slope = np.polyfit(np.arange(len(df['CMF'].dropna().values[-2:])), df['CMF'].dropna().values[-2:], 1)[0]
     latest_cmf = df['CMF'].dropna().iloc[-1]
-    print("qe")
     return {
         'latest_cmf': f"{latest_cmf}"
         #'slope': f"{slope}"
@@ -278,139 +310,3 @@ def calculate_bollinger_bands(stock_symbol: str, df, window: int, num_std: float
         'crossed_above_middle': crossed_above_middle,
         'crossed_below_middle': crossed_below_middle,
     }
-
-def backtest_prediction_accuracy(stock_id: str, interval: str, period: int, window: int, num_std: float, growth_threshold: float = 0.05, lookahead: int = 10):
-    nse_symbol = stock_id.upper()
-    df = yf.download(nse_symbol, period="2y", interval=interval, progress=False, auto_adjust=False)
-    results = []
-    min_lookback = max(period, window, 14)
-    correct = 0
-    total_signals = 0
-    for i in range(min_lookback, len(df) - lookahead):
-        df_slice = df.iloc[:i+1]
-        rsi = calculate_rsi(stock_id, df_slice, period, interval)
-        macd = calculate_macd_signal(stock_id, df_slice, interval)
-        bb = calculate_bollinger_bands(stock_id, df_slice, window, num_std)
-        cmf = calculate_cmf(stock_id,df_slice,period,interval,window)
-        signal = should_buy(rsi, macd, bb, cmf)
-        print(signal)
-        if signal['buy']:
-            print("Entered condition")
-            total_signals += 1
-            buy_price = df['Close'].iloc[i]
-            future_prices = df['Close'].iloc[i+1:i+1+lookahead]
-            max_future_price = future_prices.max()
-            max_future_price=max_future_price[stock_id]
-            buy_price = buy_price[stock_id]
-            growth = (max_future_price - buy_price) / buy_price
-            print(f"Growth: {growth}")
-            success = growth >= growth_threshold
-            print(success)
-            if success:
-                print("Entered condition 2")
-                print(df.index[i])
-                print(max_future_price)
-                print(buy_price)
-                correct += 1
-            results.append({
-                'date': str(df.index[i]),
-                'buy_price': buy_price,
-                'max_future_price': max_future_price,
-                'growth': growth,
-                'success': str(success),
-                'reason': signal['reason'],
-                'strength': signal['strength'],
-                'signals': signal['signals']
-            })
-    accuracy = correct / total_signals if total_signals > 0 else 0
-    summary = {
-        'total_signals': total_signals,
-        'correct_predictions': correct,
-        'accuracy': accuracy,
-        'details': results
-    }
-    return summary
-
-def backtest_prediction_single_accuracy(option: str,stock_id: str, interval: str, period: int, window: int, num_std: float, growth_threshold: float = 0.005, lookahead: int = 10):
-    nse_symbol = stock_id.upper()
-    df = yf.download(nse_symbol, period="2y", interval=interval, progress=False, auto_adjust=False)
-    results = []
-    min_lookback = max(period, window, 14)
-    correct = 0
-    total_signals = 0
-    for i in range(min_lookback, len(df) - lookahead):
-        df_slice = df.iloc[:i+1]
-        signal=False
-        if option=="rsi":
-            rsi_result = calculate_rsi(stock_id, df_slice, period, interval)
-            rsi_signal = False
-            if rsi_result['rsi'] < 30 and rsi_result['rsi_smooth'] > rsi_result['rsi']:
-                rsi_signal = True
-            elif rsi_result['rsi'] >= 40 and rsi_result['rsi'] <= 70 and rsi_result['rsi_smooth'] < rsi_result['rsi']:
-                rsi_signal = True
-            signal = rsi_result
-        elif option=="macd":
-            macd_result = calculate_macd_signal(stock_id, df_slice, interval)
-            macd_signal = (macd_result['is_potential_entry'] and ("bullish" in macd_result['trend_strength']))
-            signal=macd_signal
-        elif option=="bb":
-            bb_result = calculate_bollinger_bands(stock_id, df_slice, window, num_std)
-            bb_signal = False
-            if bb_result['crossed_above_middle']:
-                bb_signal = True
-            if bb_result['is_squeeze']:
-                bb_signal = True
-            if bb_result['is_oversold']:
-                bb_signal = True
-            signal=bb_signal
-        elif option=="cmf":
-            cmf_result = calculate_cmf(stock_id,df_slice,period,interval,window)
-            cmf_signal=False
-            print(float(cmf_result['latest_cmf']))
-            if float(cmf_result['latest_cmf']) > 0:
-                cmf_signal=True
-            signal=cmf_signal
-        #signal = should_buy(rsi, macd, bb)
-        signal={
-        'buy': signal,
-        'reason': ";",
-        'signals': ";",
-        'strength': ";"
-        }
-        print(f"Signal is {signal}")
-        if signal['buy']:
-            print("Entered condition")
-            total_signals += 1
-            buy_price = df['Close'].iloc[i]
-            future_prices = df['Close'].iloc[i+1:i+1+lookahead]
-            max_future_price = future_prices.max()
-            max_future_price=max_future_price[stock_id]
-            buy_price = buy_price[stock_id]
-            growth = (max_future_price - buy_price) / buy_price
-            print(f"Growth: {growth}")
-            success = growth >= growth_threshold
-            print(success)
-            if success:
-                print("Entered condition 2")
-                print(df.index[i])
-                print(max_future_price)
-                print(buy_price)
-                correct += 1
-            results.append({
-                'date': str(df.index[i]),
-                'buy_price': buy_price,
-                'max_future_price': max_future_price,
-                'growth': growth,
-                'success': str(success),
-                'reason': signal['reason'],
-                'strength': signal['strength'],
-                'signals': signal['signals']
-            })
-    accuracy = correct / total_signals if total_signals > 0 else 0
-    summary = {
-        'total_signals': total_signals,
-        'correct_predictions': correct,
-        'accuracy': accuracy,
-        'details': results
-    }
-    return summary

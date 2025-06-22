@@ -18,13 +18,13 @@ def signal_aggregator_v2(rsi_result, macd_result, bb_result,cmf_result):
     signal_strength = "Weak"
 
     # proce volatility calculation
-    pv_one = (bb_result['price'] - bb_result['lower_band']) / bb_result['lower_band'] <= 0.02
-    pv_two = rsi_result['rsi'] <= 35
+    pv_one = (bb_result['price'] - bb_result['lower_band']) / bb_result['lower_band'] <= 0.014
+    pv_two = rsi_result['rsi'] <= 32
     price_volatility = (pv_one or pv_two)
 
     if price_volatility:
         reasons.append("Price volatility is favorable")
-        if float(cmf_result['latest_cmf']) >= 0 or float(cmf_result['latest_cmf']) > -0.2:
+        if float(cmf_result['latest_cmf']) >= 0 or float(cmf_result['latest_cmf']) > -0.18:
             reasons.append("Volume confirmation is positive")
             buy_signal = True
             if float(macd_result['macd']) >= float(macd_result['signal']) or float(macd_result['histogram']) >= 0:
@@ -162,7 +162,7 @@ def calculate_rsi(stock_symbol: str, df, period: int, interval: str) -> float:
 
 def calculate_cmf(stock_symbol: str,df, period: str, interval: str, window: int = 20):
     df.columns = df.columns.get_level_values(0)
-    print(df.columns)
+    df = df.copy()
     df.dropna(subset=['High', 'Low', 'Close', 'Volume'], inplace=True)
     mf_multiplier = ((df['Close'] - df['Low']) - (df['High'] - df['Close'])) / (df['High'] - df['Low'])
     mf_multiplier.replace([float('inf'), -float('inf')], 0, inplace=True)  # handle division by zero

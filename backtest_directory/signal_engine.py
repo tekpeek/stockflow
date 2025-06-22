@@ -82,7 +82,7 @@ def backtest(
     logging.info(f"Strategy Values: interval: {interval}, period: {period}, window: {window}, num_std: {num_std}")
     if stock_id.endswith(".NS"):
         try:
-            return_data = sf.backtest_prediction_accuracy(stock_id,interval,period,window,num_std)
+            return_data = backtest_prediction_accuracy(stock_id,interval,period,window,num_std)
             if return_data is None:
                 logger.error("Return data is None")
                 return JSONResponse({"error": "No data returned from signal calculation"})
@@ -107,7 +107,7 @@ def backtest(
     logging.info(f"Strategy Values: interval: {interval}, period: {period}, window: {window}, num_std: {num_std}")
     if stock_id.endswith(".NS"):
         try:
-            return_data = sf.backtest_prediction_single_accuracy(option,stock_id,interval,period,window,num_std)
+            return_data = backtest_prediction_single_accuracy(option,stock_id,interval,period,window,num_std)
             if return_data is None:
                 logger.error("Return data is None")
                 return JSONResponse({"error": "No data returned from signal calculation"})

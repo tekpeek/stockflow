@@ -9,7 +9,7 @@ def calculate_final_signal(stock_id: str,interval: str,period: int,window: int, 
     macd = calculate_macd_signal(stock_id,df,interval)
     bb = calculate_bollinger_bands(stock_id,df,window,num_std)
     cmf = calculate_cmf(stock_id,df,period,interval,window)
-    return should_buy(rsi, macd, bb,cmf)
+    return signal_aggregator_v2(rsi, macd, bb,cmf)
 
 def signal_aggregator_v2(rsi_result, macd_result, bb_result,cmf_result):
     reasons = []
@@ -37,7 +37,7 @@ def signal_aggregator_v2(rsi_result, macd_result, bb_result,cmf_result):
             reasons.append("Volume confirmation is negative")
     else:
         reasons.append("Price volatility is not favorable")
-    
+    print("aggregation completed")
     return {
         'buy': buy_signal,
         'reason': "; ".join(reasons),
@@ -168,11 +168,9 @@ def calculate_cmf(stock_symbol: str,df, period: str, interval: str, window: int 
     mf_multiplier.replace([float('inf'), -float('inf')], 0, inplace=True)  # handle division by zero
     mf_volume = mf_multiplier * df['Volume']
     df['CMF'] = mf_volume.rolling(window=window).sum() / df['Volume'].rolling(window=window).sum()
-    #slope = np.polyfit(np.arange(len(df['CMF'].dropna().values[-2:])), df['CMF'].dropna().values[-2:], 1)[0]
     latest_cmf = df['CMF'].dropna().iloc[-1]
     return {
         'latest_cmf': f"{latest_cmf}"
-        #'slope': f"{slope}"
         }
 
 def calculate_macd_signal(stock_symbol: str, df, interval: str) -> dict:

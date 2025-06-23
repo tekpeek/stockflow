@@ -26,10 +26,10 @@ def signal_aggregator_v2(rsi_result, macd_result, bb_result,cmf_result):
         reasons.append("Price volatility is favorable")
         if float(cmf_result['latest_cmf']) >= 0 or float(cmf_result['latest_cmf']) > -0.18:
             reasons.append("Volume confirmation is positive")
-            buy_signal = True
             if float(macd_result['macd']) >= float(macd_result['signal']) or float(macd_result['histogram']) >= 0:
                 reasons.append("Trend confirmation is positive")
                 signal_strength = "Strong"
+                buy_signal = True
                 #buy_signal = True
             else:
                 reasons.append("Trend confirmation is negative")

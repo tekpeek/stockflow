@@ -1,7 +1,7 @@
 import yfinance as yf
 import pandas as pd
 import numpy as np
-from top_500_nse_tickers import top_500_nse_tickers, top_7_nse_tickers
+from top_500_nse_tickers import top_500_nse_tickers, top_10_nse_tickers, top_300_nse_tickers
 import os
 from signal_functions import calculate_bollinger_bands, calculate_cmf, calculate_macd_signal, calculate_rsi, signal_aggregator_v2, should_buy
 
@@ -29,7 +29,7 @@ def calculate_bulk_backtest(option: str):
 def calculate_bulk_backtest_overall():
     final_count = 0
     final_num = 0
-    for ticker in top_7_nse_tickers:
+    for ticker in top_10_nse_tickers:
         output=os.popen(f"curl -s http://127.0.0.1:8001/backtest/{ticker} | jq -r .").read().strip()
         total_signals = os.popen(f"echo '{output}' | jq -r .total_signals").read().strip()
         try:
@@ -41,7 +41,10 @@ def calculate_bulk_backtest_overall():
         except:
             print(f"Calculation failed for {ticker}")
             continue
-    result = float(float(final_num)/final_count)
+    if final_count > 0:
+        result = float(float(final_num)/final_count)
+    else:
+        result = 0
     return {
         'final_accuracy': f"{result}",
         'total_signals': f"{final_count}"

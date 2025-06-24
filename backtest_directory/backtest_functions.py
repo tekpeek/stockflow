@@ -1,9 +1,9 @@
 import yfinance as yf
 import pandas as pd
 import numpy as np
-from top_500_nse_tickers import top_500_nse_tickers, top_10_nse_tickers, top_300_nse_tickers
+from top_500_nse_tickers import top_500_nse_tickers, top_10_nse_tickers, top_300_nse_tickers, top_50_nse_tickers
 import os
-from signal_functions import calculate_bollinger_bands, calculate_cmf, calculate_macd_signal, calculate_rsi, signal_aggregator_v2, should_buy
+from signal_functions import calculate_bollinger_bands, calculate_cmf, calculate_macd_signal, calculate_rsi, signal_aggregator_v3, signal_aggregator_v2, should_buy
 
 def calculate_bulk_backtest(option: str):
     final_count = 0
@@ -29,7 +29,7 @@ def calculate_bulk_backtest(option: str):
 def calculate_bulk_backtest_overall():
     final_count = 0
     final_num = 0
-    for ticker in top_10_nse_tickers:
+    for ticker in top_50_nse_tickers:
         output=os.popen(f"curl -s http://127.0.0.1:8001/backtest/{ticker} | jq -r .").read().strip()
         total_signals = os.popen(f"echo '{output}' | jq -r .total_signals").read().strip()
         try:
@@ -148,7 +148,8 @@ def backtest_prediction_accuracy(stock_id: str, interval: str, period: int, wind
         bb = calculate_bollinger_bands(stock_id, df_slice, window, num_std)
         cmf = calculate_cmf(stock_id,df_slice,period,interval,window)
         #signal = should_buy(rsi, macd, bb, cmf)
-        signal = signal_aggregator_v2(rsi, macd, bb, cmf)
+        #signal = signal_aggregator_v2(rsi, macd, bb, cmf)
+        signal = signal_aggregator_v3(rsi, macd, bb, cmf)
         print(signal)
         if signal['buy']:
             print("Entered condition")

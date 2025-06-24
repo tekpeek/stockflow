@@ -8,7 +8,8 @@ def calculate_final_signal(stock_id: str,interval: str,period: int,window: int, 
     macd = calculate_macd_signal(stock_id,df,interval)
     bb = calculate_bollinger_bands(stock_id,df,window,num_std)
     cmf = calculate_cmf(stock_id,df,period,interval,window)
-    return signal_aggregator_v2(rsi, macd, bb, cmf)
+    return signal_aggregator_v3(rsi, macd, bb, cmf)
+    #return signal_aggregator_v2(rsi, macd, bb, cmf)
     #return should_buy(rsi, macd, bb, cmf)
 
 def calculate_individual(option: str, stock_id: str,interval: str,period: int,window: int, num_std: float):
@@ -24,6 +25,49 @@ def calculate_individual(option: str, stock_id: str,interval: str,period: int,wi
         return calculate_cmf(stock_id,df,period,interval,window)
     else:
         return {"error": "Invalid Strategy option!"}
+def signal_aggregator_v3(rsi_result, macd_result, bb_result,cmf_result):
+    reasons = []
+    buy_signal = False
+    buy_signal_list = []
+    signal_strength = "Weak"
+    signal_count = 0
+    positive_rsi = False
+
+    positive_cmf = float(cmf_result['latest_cmf']) >= 0
+
+    bb_one =  (bb_result['price'] - bb_result['lower_band']) / bb_result['lower_band'] <= 0.014
+
+    if rsi_result['rsi'] < 30 and rsi_result['rsi_smooth'] > rsi_result['rsi']:
+        positive_rsi = True
+    elif rsi_result['rsi'] >= 40 and rsi_result['rsi'] <= 70 and rsi_result['rsi_smooth'] < rsi_result['rsi']:
+        positive_rsi = True
+    
+    if float(macd_result['macd']) >= float(macd_result['signal']) and macd_result['is_potential_entry'] and positive_cmf:
+        signal_count+=1
+        buy_signal_list.append("MACD-1 & CMF")
+    if float(macd_result['histogram']) >=0 and ("bullish" in macd_result['trend_strength']):
+        signal_count+=1
+        buy_signal_list.append("MACD-2")
+    
+    if bb_one and (positive_cmf or positive_rsi):
+        signal_count+=1
+        buy_signal_list.append("BB-1 & (CMF,RSI)")
+    
+    if bb_result['crossed_above_middle'] and (positive_cmf or positive_rsi):
+        signal_count+=1
+        buy_signal_list.append("BB-2 & RSI")
+    
+    if signal_count > 2:
+        signal_strength - "Strong"
+    if signal_count >= 2:
+        buy_signal = True
+    
+    return {
+        'buy': buy_signal,
+        'reason': "; ".join(reasons),
+        'signals': "; ".join(buy_signal_list),
+        'strength': f"{signal_strength}"
+    }
 
 def signal_aggregator_v2(rsi_result, macd_result, bb_result,cmf_result):
     reasons = []

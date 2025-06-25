@@ -7,6 +7,7 @@ import logging
 import sys
 import os
 import numpy as np
+import datetime
 from backtest_functions import calculate_bulk_backtest, calculate_bulk_backtest_overall, backtest_prediction_accuracy, backtest_prediction_single_accuracy
 # Configure logging to print to stdout
 logging.basicConfig(
@@ -33,6 +34,14 @@ def convert_bools_to_strings(data):
     return data
 
 signal_engine = FastAPI()
+
+@signal_engine.get("/health")
+def health_check():
+    time_stamp = datetime.datetime.now(datetime.UTC)
+    return JSONResponse({
+            "status": "OK",
+            "timestamp": f"{time_stamp}"
+    })
 
 @signal_engine.get("/backtest")
 def backtest():

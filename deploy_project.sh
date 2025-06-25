@@ -59,6 +59,7 @@ kubectl delete configmap cronjob-config --ignore-not-found
 kubectl create configmap cronjob-config \
  --from-file=src/core/top_500_nse_tickers.py \
  --from-file=src/core/cronjob-execution.py \
+ --from-file=src/core/healthcheck-execution.py \
  --from-file=src/core/smtp_email_trigger.py
 
 # delete and recreate the cronjob
@@ -89,3 +90,10 @@ check_deployment "stockflow-controller"
 
 # Apply ingress service
 kubectl apply -f kubernetes/services/stockflow-ingress.yaml
+
+# Delete and recreate health check cronjob
+kubectl delete cronjob health-check-cronjob --ignore-not-found
+kubectl apply -f kubernetes/cronjobs/health-check-cronjob.yaml
+
+# create a manual cronjob and check functioning
+kubectl create job health-check-manual --from=cronjob/health-check-cronjob

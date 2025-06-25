@@ -4,6 +4,7 @@ from fastapi.responses import JSONResponse
 import logging
 import sys
 import time
+import datetime
 from typing import Dict, Any
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
@@ -34,6 +35,14 @@ def check_cronjob_exists() -> bool:
     except ApiException as e:
         logger.error(f"Cronjob not found: {str(e)}")
         return False
+
+@stockflow_controller.get("/admin/health")
+def health_check():
+    time_stamp = datetime.datetime.now(datetime.UTC)
+    return JSONResponse({
+            "status": "OK",
+            "timestamp": f"{time_stamp}"
+    })
 
 @stockflow_controller.get("/admin/trigger-cron")
 async def trigger_cronjob() -> Dict[str, Any]:

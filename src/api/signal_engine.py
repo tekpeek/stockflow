@@ -3,6 +3,7 @@ import uvicorn
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 import signal_functions as sf
+import datetime
 import logging
 import sys
 import os
@@ -33,6 +34,14 @@ def convert_bools_to_strings(data):
     return data
 
 signal_engine = FastAPI()
+
+@signal_engine.get("/health")
+def health_check():
+    time_stamp = datetime.datetime.now(datetime.UTC)
+    return JSONResponse({
+            "status": "OK",
+            "timestamp": f"{time_stamp}"
+    })
 
 @signal_engine.get("/{stock_id}")
 def get_stock_data(

@@ -67,7 +67,7 @@ kubectl delete cronjob signal-check-cronjob --ignore-not-found
 kubectl apply -f kubernetes/cronjobs/signal-check-cronjob.yaml
 
 # create a manual cronjob and check functioning
-kubectl create job signal-check-manual --from=cronjob/signal-check-cronjob
+#kubectl create job signal-check-manual --from=cronjob/signal-check-cronjob
 
 # delete and recreate rbac related service configuration
 kubectl delete clusterrolebinding controller-rolebinding --ignore-not-found

@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends, Request
 import uvicorn
 from fastapi.responses import JSONResponse
 import logging
@@ -8,6 +8,7 @@ import datetime
 from typing import Dict, Any
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
+import os
 
 logging.basicConfig(
     level=logging.INFO,
@@ -24,6 +25,12 @@ except config.ConfigException:
 
 v1 = client.BatchV1Api()
 stockflow_controller = FastAPI()
+
+def api_key_auth(request: Request):
+    api_key = request.headers.get('X-API-Key')
+    expected_key = os.getenv('SF_API_KEY')
+    if not api_key or api_key != expected_key:
+        raise HTTPException(status_code=401, detail="Invalid or missing API Key")
 
 def check_cronjob_exists() -> bool:
     try:
@@ -45,7 +52,7 @@ def health_check():
     })
 
 @stockflow_controller.get("/admin/trigger-cron")
-async def trigger_cronjob() -> Dict[str, Any]:
+async def trigger_cronjob(dep=Depends(api_key_auth)) -> Dict[str, Any]:
     if not check_cronjob_exists():
         return JSONResponse(
             status_code=404,

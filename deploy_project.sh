@@ -54,6 +54,12 @@ if [[ ! -z "${SMTP_PASSWORD}" ]]; then
         --from-literal=smtp-host="smtp.gmail.com"
 fi
 
+if [[ ! -z "${SF_API_KEY}" ]]; then
+    kubectl delete secret api-credentials --ignore-not-found
+    kubectl create secret generic api-credentials \
+        --from-literal=api-key="${SF_API_KEY}"
+fi
+
 # Delete and recreate configmap for cronjob
 kubectl delete configmap cronjob-config --ignore-not-found
 kubectl create configmap cronjob-config \

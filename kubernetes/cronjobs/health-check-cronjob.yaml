@@ -6,6 +6,7 @@ spec:
   schedule: "0 * * * *"
   jobTemplate:
     spec:
+      ttlSecondsAfterFinished: 7200
       template:
         spec:
           containers:

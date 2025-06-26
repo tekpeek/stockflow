@@ -18,5 +18,6 @@ jobs:
    - name: deploy-microservice
      env:
        SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+       SF_API_KEY: ${{ secrets.SF_API_KEY }}
      run: |
        bash deploy_project.sh

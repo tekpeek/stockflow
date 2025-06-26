@@ -4,29 +4,35 @@ import smtplib
 from email.message import EmailMessage
 from email.utils import formataddr
 from datetime import datetime
+import time
+
+def check_service_health(url, retries=3, timeout=5):
+    for attempt in range(retries):
+        output = os.popen(f"curl -s --max-time {timeout} {url} | jq -r .").read().strip()
+        status = os.popen(f"echo '{output}' | jq -r .status").read().strip()
+        if status == "OK":
+            return True
+        time.sleep(1)  # Wait 1 second before retrying
+    return False
 
 def health_check():
-    issues=[]
+    issues = []
     is_healthy = True
-    output=os.popen(f"curl -s https://tekpeek.duckdns.org/health | jq -r .").read().strip()
-    se_status = os.popen(f"echo '{output}' | jq -r .status").read().strip()
+    se_healthy = check_service_health("https://tekpeek.duckdns.org/health")
+    sc_healthy = check_service_health("https://tekpeek.duckdns.org/admin/health")
 
-    output=os.popen(f"curl -s https://tekpeek.duckdns.org/admin/health | jq -r .").read().strip()
-    sc_status = os.popen(f"echo '{output}' | jq -r .status").read().strip()
-
-    if str(se_status) != "OK":
+    if not se_healthy:
         is_healthy = False
         issues.append("signal-engine")
-    if str(sc_status) != "OK":
+    if not sc_healthy:
         is_healthy = False
         issues.append("stockflow-controller")
-
-
 
     return [is_healthy, issues]
 
 if __name__ == "__main__":
     health_status = health_check()
+    print(f"health_status: {health_status}")
     if not health_status[0]:
             current_datetime = datetime.now().strftime("%B %d %Y - %I:%M %p")
             subject = f"Stockflow Alert: Health Check Failed - {current_datetime}"

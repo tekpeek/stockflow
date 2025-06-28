@@ -9,6 +9,7 @@ import logging
 import sys
 import os
 import numpy as np
+import datetime
 from backtest_functions import calculate_bulk_backtest, calculate_bulk_backtest_overall, backtest_prediction_accuracy, backtest_prediction_single_accuracy
 # Configure logging to print to stdout
 logging.basicConfig(
@@ -43,6 +44,30 @@ signal_engine.mount("/static", StaticFiles(directory="static"), name="static")
 def read_root():
     return FileResponse("static/index.html")
 
+
+# Mount static files
+signal_engine.mount("/static", StaticFiles(directory="static"), name="static")
+
+@signal_engine.get("/")
+def read_root():
+    return FileResponse("static/index.html")
+
+
+# Mount static files
+signal_engine.mount("/static", StaticFiles(directory="static"), name="static")
+
+@signal_engine.get("/")
+def read_root():
+    return FileResponse("static/index.html")
+
+
+@signal_engine.get("/health")
+def health_check():
+    time_stamp = datetime.datetime.now(datetime.UTC)
+    return JSONResponse({
+            "status": "OK",
+            "timestamp": f"{time_stamp}"
+    })
 
 @signal_engine.get("/backtest")
 def backtest():

@@ -19,6 +19,11 @@ spec:
         - name: stockflow-controller
           image: kingaiva/stockflow-controller:dev
           env:
+            - name: SF_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: api-credentials
+                  key: api-key
             - name: PORT
               value: "9000"
           imagePullPolicy: Always

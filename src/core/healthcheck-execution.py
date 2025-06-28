@@ -6,7 +6,7 @@ from email.utils import formataddr
 from datetime import datetime
 import time
 
-def check_service_health(url, retries=3, timeout=5):
+def check_service_health(url, retries=3, timeout=20):
     for attempt in range(retries):
         output = os.popen(f"curl -s --max-time {timeout} {url} | jq -r .").read().strip()
         print(f"output for {url}: {output} : attempt: {attempt}")

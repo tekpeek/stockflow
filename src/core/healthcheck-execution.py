@@ -9,6 +9,8 @@ import time
 def check_service_health(url, retries=3, timeout=5):
     for attempt in range(retries):
         output = os.popen(f"curl -s --max-time {timeout} {url} | jq -r .").read().strip()
+        print(f"output for {url}: {output} : attempt: {attempt}")
+        print("*****************")
         status = os.popen(f"echo '{output}' | jq -r .status").read().strip()
         if status == "OK":
             return True

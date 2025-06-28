@@ -37,6 +37,13 @@ def convert_bools_to_strings(data):
 
 signal_engine = FastAPI()
 
+@signal_engine.get("/health")
+def health_check():
+    time_stamp = datetime.datetime.now(datetime.UTC)
+    return JSONResponse({
+            "status": "OK",
+            "timestamp": f"{time_stamp}"
+    })
 # Mount static files
 signal_engine.mount("/app/static", StaticFiles(directory="static"), name="static")
 

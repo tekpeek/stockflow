@@ -2,6 +2,7 @@ from fastapi import FastAPI
 import uvicorn
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 import signal_functions as sf
 import datetime
 import logging
@@ -34,6 +35,15 @@ def convert_bools_to_strings(data):
     return data
 
 signal_engine = FastAPI()
+
+# Add CORS middleware
+signal_engine.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
+)
 
 @signal_engine.get("/health")
 def health_check():

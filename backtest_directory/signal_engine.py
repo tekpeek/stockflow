@@ -37,30 +37,6 @@ def convert_bools_to_strings(data):
 
 signal_engine = FastAPI()
 
-# Mount static files
-signal_engine.mount("/static", StaticFiles(directory="static"), name="static")
-
-@signal_engine.get("/")
-def read_root():
-    return FileResponse("static/index.html")
-
-
-# Mount static files
-signal_engine.mount("/static", StaticFiles(directory="static"), name="static")
-
-@signal_engine.get("/")
-def read_root():
-    return FileResponse("static/index.html")
-
-
-# Mount static files
-signal_engine.mount("/static", StaticFiles(directory="static"), name="static")
-
-@signal_engine.get("/")
-def read_root():
-    return FileResponse("static/index.html")
-
-
 @signal_engine.get("/health")
 def health_check():
     time_stamp = datetime.datetime.now(datetime.UTC)
@@ -68,6 +44,13 @@ def health_check():
             "status": "OK",
             "timestamp": f"{time_stamp}"
     })
+
+# Mount static files
+signal_engine.mount("/static", StaticFiles(directory="static"), name="static")
+
+@signal_engine.get("/")
+def read_root():
+    return FileResponse("static/index.html")
 
 @signal_engine.get("/backtest")
 def backtest():

@@ -2,8 +2,6 @@ from fastapi import FastAPI
 import uvicorn
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
 import signal_functions as sf
 import logging
 import sys
@@ -44,13 +42,6 @@ def health_check():
             "status": "OK",
             "timestamp": f"{time_stamp}"
     })
-
-# Mount static files
-signal_engine.mount("/static", StaticFiles(directory="static"), name="static")
-
-@signal_engine.get("/")
-def read_root():
-    return FileResponse("static/index.html")
 
 @signal_engine.get("/backtest")
 def backtest():

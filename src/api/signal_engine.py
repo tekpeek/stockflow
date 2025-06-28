@@ -2,6 +2,8 @@ from fastapi import FastAPI
 import uvicorn
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 import signal_functions as sf
 import logging
 import sys
@@ -33,6 +35,13 @@ def convert_bools_to_strings(data):
     return data
 
 signal_engine = FastAPI()
+
+# Mount static files
+signal_engine.mount("/app/static", StaticFiles(directory="static"), name="static")
+
+@signal_engine.get("/")
+def read_root():
+    return FileResponse("/app/static/index.html")
 
 @signal_engine.get("/{stock_id}")
 def get_stock_data(

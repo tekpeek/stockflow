@@ -43,7 +43,7 @@ def check_cronjob_exists() -> bool:
         logger.error(f"Cronjob not found: {str(e)}")
         return False
 
-@stockflow_controller.get("/admin/health")
+@stockflow_controller.get("/api/admin/health")
 def health_check():
     time_stamp = datetime.datetime.now(datetime.UTC)
     return JSONResponse({
@@ -51,7 +51,7 @@ def health_check():
             "timestamp": f"{time_stamp}"
     })
 
-@stockflow_controller.get("/admin/trigger-cron")
+@stockflow_controller.get("/api/admin/trigger-cron")
 async def trigger_cronjob(dep=Depends(api_key_auth)) -> Dict[str, Any]:
     if not check_cronjob_exists():
         return JSONResponse(

@@ -20,8 +20,8 @@ def check_service_health(url, retries=3, timeout=20):
 def health_check():
     issues = []
     is_healthy = True
-    se_healthy = check_service_health("https://tekpeek.duckdns.org/health")
-    sc_healthy = check_service_health("https://tekpeek.duckdns.org/admin/health")
+    se_healthy = check_service_health("https://tekpeek.duckdns.org/api/health")
+    sc_healthy = check_service_health("https://tekpeek.duckdns.org/api/admin/health")
 
     if not se_healthy:
         is_healthy = False

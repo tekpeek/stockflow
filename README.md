@@ -14,6 +14,11 @@ Anyone who wants to trim down potential stocks to a limited count so that they c
 - **Multi-Indicator Analysis**: Identifying potential entry points by combining signals from RSI, MACD, Bollinger Bands, CMF (Chaikin Money Flow)
 - **Real-time Data**: Live stock data from Yahoo Finance
 - **Confidence Scoring**: Signal strength assessment (Weak/Strong)
+- **Health check API**: Health check API to detect status of microservice
+
+### **StockFlow Controller**
+- **Manual Job Trigger through API**: Administrative API endpoint for triggering manual job from conjob using API call
+- **Health check API**: Health check API to detect status of microservice
 
 ### **Technical Indicators**
 - **RSI (Relative Strength Index)**: Momentum oscillator with smoothing
@@ -41,3 +46,21 @@ Anyone who wants to trim down potential stocks to a limited count so that they c
 - **CI/CD Pipeline with Automated Deployment**: Automated deployment using Github Actions to k3s cluster
 - **Cloud VM for complete deployment**: The entire service runs on Oracle Cloud Infrastructure VM which acts as a self hosted runner as well, on Github Actions.
 - **Static Frontend**: Static Frontend for stockflow APIs using Bootstrap, CSS, Javascript.
+
+### **Architecture**
+
+#### **StockFlow API Architecture**
+![StockFlow API Architecture](docs/diagrams/api-flow-diagram.png)
+
+#### **Stock Analysis CronJob Execution Diagram**
+![Stock Analysis CronJob Execution Diagram](docs/diagrams/cronjob-execution-diagram.png)
+
+### **Signal Aggregator Logic**
+![Signal Aggregator Logic](docs/diagrams/signal-aggregator-logic.png)
+
+#### **Health Check and Alert Flow Diagram**
+
+#### **CI/CD Github Actions Flow Diagram**
+
+
+

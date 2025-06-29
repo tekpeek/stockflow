@@ -12,14 +12,14 @@ spec:
     - host: tekpeek.duckdns.org
       http:
         paths:
-          - path: /
+          - path: /api
             pathType: Prefix
             backend:
               service:
                 name: signal-engine-service
                 port:
                   number: 8000
-          - path: /admin
+          - path: /api/admin
             pathType: Prefix
             backend:
               service:

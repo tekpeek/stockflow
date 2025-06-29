@@ -8,6 +8,12 @@ This tool is intended to serve as an initial screening layer for me, providing s
 ## Who is it for ?
 Anyone who wants to trim down potential stocks to a limited count so that they can invest less time in initial screening and focus on more deeper analysis.
 
+## Link to StockFlow Web App
+
+🌐 **Live Application**: [StockFlow Web App](https://avinashsubhash.github.io/stockflow)
+
+📊 **API Documentation**: [Coming Soon]
+
 ## Features
 
 ### **Signal Engine**
@@ -59,8 +65,10 @@ Anyone who wants to trim down potential stocks to a limited count so that they c
 ![Signal Aggregator Logic](docs/diagrams/signal-aggregator-logic.png)
 
 #### **Health Check and Alert Flow Diagram**
+![Health Check and Alert Flow Diagram](docs/diagrams/health-check-cronjob-diagram.png)
 
 #### **CI/CD Github Actions Flow Diagram**
+![CI/CD Github Actions Flow Diagram](docs/diagrams/github-actions-diagram.png)
 
 
 

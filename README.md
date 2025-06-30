@@ -12,7 +12,8 @@ Anyone who wants to trim down potential stocks to a limited count so that they c
 
 🌐 **Live Application**: [StockFlow Web App](https://avinashsubhash.github.io/stockflow)
 
-📊 **API Documentation**: [Coming Soon]
+📊 **API Documentation**: [API Documentation](docs/API_README.md)
+
 
 ## Features
 

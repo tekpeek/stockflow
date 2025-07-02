@@ -14,6 +14,16 @@ Anyone who wants to trim down potential stocks to a limited count so that they c
 
 📊 **API Documentation**: [API Documentation](docs/API_README.md)
 
+## Live Workflow Status
+
+Image Build Workflow
+
+![Build](https://github.com/AvinashSubhash/stockflow/actions/workflows/build.yml/badge.svg)
+
+Deploy Workflow
+
+![Deploy](https://github.com/AvinashSubhash/stockflow/actions/workflows/deploy-stockflow.yml/badge.svg)
+
 
 ## Features
 

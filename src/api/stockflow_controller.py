@@ -51,6 +51,14 @@ def health_check():
             "timestamp": f"{time_stamp}"
     })
 
+@stockflow_controller.get("/api/admin/maintenance/{status}")
+def enable_maintenance(status: str):
+
+    return JSONResponse({
+            "status": "OK",
+            "timestamp": f"{result}"
+    })
+
 @stockflow_controller.get("/api/admin/trigger-cron")
 async def trigger_cronjob(dep=Depends(api_key_auth)) -> Dict[str, Any]:
     if not check_cronjob_exists():

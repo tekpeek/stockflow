@@ -53,10 +53,16 @@ def health_check():
 
 @stockflow_controller.get("/api/admin/maintenance/{status}")
 def enable_maintenance(status: str):
-
+    time_stamp = datetime.datetime.now(datetime.UTC)
+    if status == "enable":
+        result = "Maintenance mode enabled"
+    elif status == "disable":
+        result = "Maintenance mode disabled"
+    else:
+        result = "Invalid status"
     return JSONResponse({
-            "status": "OK",
-            "timestamp": f"{result}"
+            "status": f"{result}",
+            "timestamp": f"{time_stamp}"
     })
 
 @stockflow_controller.get("/api/admin/trigger-cron")

@@ -24,6 +24,8 @@ except config.ConfigException:
     config.load_kube_config()
 
 v1 = client.BatchV1Api()
+v1_core = client.CoreV1Api()
+v1_core_apps = client.AppsV1Api()
 stockflow_controller = FastAPI()
 
 def api_key_auth(request: Request):
@@ -64,10 +66,29 @@ def enable_maintenance(status: str):
             "status": f"{status}",
             "timestamp": f"{time_stamp}"
         })
+    configmap = v1_core.read_namespaced_config_map(name="maintenance-config",namespace="default")
+    existing_status = configmap.data['status']
+    print("Status : ",existing_status)
+    if existing_status != status:
+        configmap.data['status'] = status
+        response = v1_core.patch_namespaced_config_map(name="maintenance-config",namespace="default",body=configmap)
+        print("Response : ",response)
+        pre_scale_response = v1_core_apps.read_namespaced_deployment(name="signal-engine",namespace="default")
+        print(pre_scale_response.spec.replicas)
+        pre_scale_response.spec.replicas = 0
+        response = v1_core_apps.patch_namespaced_deployment(name="signal-engine",namespace="default",body=pre_scale_response)
+        pre_scale_response.spec.replicas = 1
+        response = v1_core_apps.patch_namespaced_deployment(name="signal-engine",namespace="default",body=pre_scale_response)
+        print("Response : ",response)
+        return JSONResponse({
+                "status": f"{status}",
+                "timestamp": f"{time_stamp}"
+        })
     return JSONResponse({
-            "status": f"{result}",
+            "status": f"{status}",
             "timestamp": f"{time_stamp}"
-    })
+        })
+    
 
 @stockflow_controller.get("/api/admin/trigger-cron")
 async def trigger_cronjob(dep=Depends(api_key_auth)) -> Dict[str, Any]:
@@ -133,4 +154,4 @@ async def trigger_cronjob(dep=Depends(api_key_auth)) -> Dict[str, Any]:
 
 if __name__ == "__main__":
     logger.info("Starting up stockflow controller server")
-    uvicorn.run("stockflow_controller:stockflow_controller", host="0.0.0.0", port=9000, log_level="info")
+    uvicorn.run("stockflow_controller:stockflow_controller", host="0.0.0.0", port=9001, log_level="info")

@@ -24,6 +24,8 @@ except config.ConfigException:
     config.load_kube_config()
 
 v1 = client.BatchV1Api()
+v1_core = client.CoreV1Api()
+v1_core_apps = client.AppsV1Api()
 stockflow_controller = FastAPI()
 
 def api_key_auth(request: Request):
@@ -50,6 +52,45 @@ def health_check():
             "status": "OK",
             "timestamp": f"{time_stamp}"
     })
+
+@stockflow_controller.get("/api/admin/maintenance/{status}")
+async def enable_maintenance(status: str, dep=Depends(api_key_auth)) -> Dict[str, Any]:
+    time_stamp = datetime.datetime.now(datetime.UTC)
+    if status == "on":
+        result = "Maintenance mode enabled"
+    elif status == "off":
+        result = "Maintenance mode disabled"
+    else:
+        result = "Invalid status"
+        return JSONResponse({
+            "status": f"{status}",
+            "timestamp": f"{time_stamp}"
+        })
+    
+    configmap = v1_core.read_namespaced_config_map(name="maintenance-config",namespace="default")
+    existing_status = configmap.data['status']
+    print("Status : ",existing_status)
+    if existing_status != status:
+        configmap.data['status'] = status
+        response = v1_core.patch_namespaced_config_map(name="maintenance-config",namespace="default",body=configmap)
+        print("Response : ",response)
+        # Perform a rollout restart by updating an annotation
+        deployment = v1_core_apps.read_namespaced_deployment(name="signal-engine", namespace="default")
+        if not deployment.spec.template.metadata.annotations:
+            deployment.spec.template.metadata.annotations = {}
+        import time as _time
+        deployment.spec.template.metadata.annotations["kubectl.kubernetes.io/restartedAt"] = datetime.datetime.utcnow().isoformat()
+        response = v1_core_apps.patch_namespaced_deployment(name="signal-engine", namespace="default", body=deployment)
+        print("Rollout restart response : ", response)
+        return JSONResponse({
+                "status": f"{status}",
+                "timestamp": f"{time_stamp}"
+        })
+    return JSONResponse({
+            "status": f"{status}",
+            "timestamp": f"{time_stamp}"
+        })
+    
 
 @stockflow_controller.get("/api/admin/trigger-cron")
 async def trigger_cronjob(dep=Depends(api_key_auth)) -> Dict[str, Any]:

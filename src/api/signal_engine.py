@@ -24,6 +24,7 @@ DEFAULT_INTERVAL = os.getenv("INTERVAL")
 DEFAULT_PERIOD = int(os.getenv("PERIOD"))
 DEFAULT_WINDOW = int(os.getenv("WINDOW"))
 DEFAULT_NUM_STD = float(os.getenv("NUM_STD"))
+MAINTENANCE_STATUS = os.getenv("MAINTENANCE_STATUS")
 
 def convert_bools_to_strings(data):
     if isinstance(data, dict):
@@ -47,6 +48,8 @@ signal_engine.add_middleware(
 
 @signal_engine.get("/api/health")
 def health_check():
+    if MAINTENANCE_STATUS == "on":
+        return JSONResponse({"status": "Maintenance mode is enabled"})
     time_stamp = datetime.datetime.now(datetime.UTC)
     return JSONResponse({
             "status": "OK",
@@ -61,6 +64,8 @@ def get_stock_data(
     window: int = DEFAULT_WINDOW,
     num_std: float = DEFAULT_NUM_STD
 ):
+    if MAINTENANCE_STATUS == "on":
+        return JSONResponse({"status": "Maintenance mode is enabled"})
     logging.info("Triggering signal-engine for "+stock_id)
     logging.info(f"Strategy Values: interval: {interval}, period: {period}, window: {window}, num_std: {num_std}")
     if stock_id.endswith(".NS"):
@@ -86,6 +91,8 @@ def get_stock_data(
     window: int = DEFAULT_WINDOW,
     num_std: float = DEFAULT_NUM_STD
 ):
+    if MAINTENANCE_STATUS == "on":
+        return JSONResponse({"status": "Maintenance mode is enabled"})
     logging.info("Triggering signal-engine for "+stock_id)
     logging.info(f"Strategy Values: interval: {interval}, period: {period}, window: {window}, num_std: {num_std}")
     if stock_id.endswith(".NS"):

@@ -54,7 +54,7 @@ def health_check():
     })
 
 @stockflow_controller.get("/api/admin/maintenance/{status}")
-def enable_maintenance(status: str):
+async def enable_maintenance(status: str, dep=Depends(api_key_auth)) -> Dict[str, Any]:
     time_stamp = datetime.datetime.now(datetime.UTC)
     if status == "on":
         result = "Maintenance mode enabled"
@@ -154,4 +154,4 @@ async def trigger_cronjob(dep=Depends(api_key_auth)) -> Dict[str, Any]:
 
 if __name__ == "__main__":
     logger.info("Starting up stockflow controller server")
-    uvicorn.run("stockflow_controller:stockflow_controller", host="0.0.0.0", port=9001, log_level="info")
+    uvicorn.run("stockflow_controller:stockflow_controller", host="0.0.0.0", port=9000, log_level="info")

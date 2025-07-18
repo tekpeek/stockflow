@@ -32,6 +32,11 @@ kubectl create secret generic strategy-config \
     --from-literal=window=20 \
     --from-literal=num_std=2
 
+# Delete and recreate maintenance-config configmap
+kubectl delete configmap maintenance-config --ignore-not-found
+kubectl create configmap maintenance-config \
+    --from-literal=status="off"
+
 # Delete old deployment and deploy the signal engine server
 kubectl delete deployment signal-engine --ignore-not-found
 kubectl apply -f kubernetes/deployments/signal-engine-deployment.yaml

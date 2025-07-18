@@ -74,13 +74,14 @@ async def enable_maintenance(status: str, dep=Depends(api_key_auth)) -> Dict[str
         configmap.data['status'] = status
         response = v1_core.patch_namespaced_config_map(name="maintenance-config",namespace="default",body=configmap)
         print("Response : ",response)
-        pre_scale_response = v1_core_apps.read_namespaced_deployment(name="signal-engine",namespace="default")
-        print(pre_scale_response.spec.replicas)
-        pre_scale_response.spec.replicas = 0
-        response = v1_core_apps.patch_namespaced_deployment(name="signal-engine",namespace="default",body=pre_scale_response)
-        pre_scale_response.spec.replicas = 1
-        response = v1_core_apps.patch_namespaced_deployment(name="signal-engine",namespace="default",body=pre_scale_response)
-        print("Response : ",response)
+        # Perform a rollout restart by updating an annotation
+        deployment = v1_core_apps.read_namespaced_deployment(name="signal-engine", namespace="default")
+        if not deployment.spec.template.metadata.annotations:
+            deployment.spec.template.metadata.annotations = {}
+        import time as _time
+        deployment.spec.template.metadata.annotations["kubectl.kubernetes.io/restartedAt"] = datetime.datetime.utcnow().isoformat()
+        response = v1_core_apps.patch_namespaced_deployment(name="signal-engine", namespace="default", body=deployment)
+        print("Rollout restart response : ", response)
         return JSONResponse({
                 "status": f"{status}",
                 "timestamp": f"{time_stamp}"

@@ -66,6 +66,7 @@ async def enable_maintenance(status: str, dep=Depends(api_key_auth)) -> Dict[str
             "status": f"{status}",
             "timestamp": f"{time_stamp}"
         })
+    
     configmap = v1_core.read_namespaced_config_map(name="maintenance-config",namespace="default")
     existing_status = configmap.data['status']
     print("Status : ",existing_status)

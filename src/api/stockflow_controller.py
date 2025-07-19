@@ -8,6 +8,7 @@ import datetime
 from typing import Dict, Any
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
+from fastapi.middleware.cors import CORSMiddleware
 import os
 
 logging.basicConfig(
@@ -27,6 +28,15 @@ v1 = client.BatchV1Api()
 v1_core = client.CoreV1Api()
 v1_core_apps = client.AppsV1Api()
 stockflow_controller = FastAPI()
+
+# Add CORS middleware
+stockflow_controller.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
+)
 
 def api_key_auth(request: Request):
     api_key = request.headers.get('X-API-Key')

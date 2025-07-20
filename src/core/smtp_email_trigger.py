@@ -43,7 +43,7 @@ This is an automated message. Please do not reply.
     smtp_user = "noreply.avinash.s@gmail.com"
     smtp_password = os.getenv("SMTP_PASSWORD")
     smtp_port = os.getenv("SMTP_PORT")
-    reciever = "avinashsubhash19@gmail.com"
+    reciever = "kingaiva@icloud.com"
     msg = EmailMessage()
     msg['Subject'] = subject
     msg['From'] = formataddr(("Market Monitor", sender_addr))

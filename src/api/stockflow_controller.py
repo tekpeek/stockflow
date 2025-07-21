@@ -63,6 +63,14 @@ def health_check():
             "timestamp": f"{time_stamp}"
     })
 
+@stockflow_controller.get("/api/admin/maintenance/status")
+def maintenance_status():
+    time_stamp = datetime.datetime.now(datetime.UTC)
+    return JSONResponse({
+            "status": "on/off",
+            "timestamp": f"{time_stamp}"
+    })
+
 @stockflow_controller.get("/api/admin/maintenance/{status}")
 async def enable_maintenance(status: str, dep=Depends(api_key_auth)) -> Dict[str, Any]:
     time_stamp = datetime.datetime.now(datetime.UTC)

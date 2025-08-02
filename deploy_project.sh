@@ -24,6 +24,7 @@ check_deployment() {
     fi
 }
 
+
 # Delete and recreate strategy related configuration secret
 kubectl delete secret generic strategy-config --ignore-not-found
 kubectl create secret generic strategy-config \

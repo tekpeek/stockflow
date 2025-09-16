@@ -40,6 +40,11 @@ spec:
                   key: num_std
             - name: PORT
               value: "8000"
+            - name: MAINTENANCE_STATUS
+              valueFrom:
+                configMapKeyRef:
+                  name: maintenance-config
+                  key: status
           imagePullPolicy: Always
           ports:
             - containerPort: 8000

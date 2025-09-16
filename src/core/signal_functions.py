@@ -58,7 +58,7 @@ def signal_aggregator_v3(rsi_result, macd_result, bb_result,cmf_result):
         buy_signal_list.append("BB-2 & RSI")
     
     if signal_count > 2:
-        signal_strength - "Strong"
+        signal_strength = "Strong"
     if signal_count >= 2:
         buy_signal = True
     

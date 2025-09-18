@@ -25,8 +25,9 @@ class Item(BaseModel):
 
 # Get values from environment variables (Kubernetes ConfigMap/Secret)
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-
+MAINTENANCE_STATUS = os.getenv("MAINTENANCE_STATUS")
 market_intel = FastAPI()
+client = AsyncOpenAI()
 
 @market_intel.get("/health")
 async def health_check():
@@ -40,11 +41,47 @@ async def health_check():
 
 @market_intel.post("/chat")
 async def push_prompt(item: Item):
-    return item
+    time_stamp = datetime.datetime.now(datetime.UTC)
     if MAINTENANCE_STATUS == "on":
+        logging.info("Skipping API call as service is in maintenance mode")
         return JSONResponse({"status": "Maintenance mode is enabled"})
-    logging.info("Triggering signal-engine for "+stock_id)
-    logging.info(f"Strategy Values: interval: {interval}, period: {period}, window: {window}, num_std: {num_std}")
+    if not item.prompt:
+        logging.info("Prompt is empty, skipping API call.")
+        return JSONResponse({
+            "result": "Prompt is empty",
+            "timestamp": f"{time_stamp}"
+        })
+    try:
+        completion = await client.chat.completions.create(
+        model="gpt-5",
+        messages=[
+            {
+                "role": "user",
+                "content": f"{item.prompt}",
+            },
+        ],
+        )
+    except Exception as e:
+        logging.info(f"API call failed. Error: {e}")
+        return JSONResponse({
+            "result": "failed",
+            "timestamp": f"{time_stamp}",
+            "error": f"{e}"
+        })
+    time_stamp = datetime.datetime.now(datetime.UTC)
+    final_result = completion.choices[0].message.content
+    if not final_result:
+        logging.info("Result is empty, printing model response.")
+        print(completion)
+        return JSONResponse({
+            "result": "failed",
+            "timestamp": f"{time_stamp}",
+            "error": "Result is empty"
+        })
+    return JSONResponse({
+            "result": f"{final_result}",
+            "timestamp": f"{time_stamp}"
+    })
 
 if __name__ == "__main__":
     logger.info("Starting up market-intel-engine server")

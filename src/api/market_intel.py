@@ -6,7 +6,6 @@ import datetime
 import logging
 import sys
 import os
-import numpy as np
 from openai import AsyncOpenAI
 import asyncio
 from pydantic import BaseModel

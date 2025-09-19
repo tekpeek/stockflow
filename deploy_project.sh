@@ -76,7 +76,8 @@ fi
 if [[ ! -z "${SF_API_KEY}" ]]; then
     kubectl -n "$namespace" delete secret api-credentials --ignore-not-found
     kubectl -n "$namespace" create secret generic api-credentials \
-        --from-literal=api-key="${SF_API_KEY}"
+        --from-literal=api-key="${SF_API_KEY}" \
+        --from-literal=OPENAI_API_KEY="${OPENAI_API_KEY}"
 fi
 
 # Delete and recreate configmap for cronjob
@@ -135,6 +136,10 @@ if [[ "$namespace" != "default" ]]; then
 else
     kubectl -n "$namespace" apply -f kubernetes/services/stockflow-ingress.yaml
 fi
+
+# Delete and recreate market-intel-engine microservice
+kubectl -n "$namespace" delete deployment kubernetes/deployments/market-intel-engine.deployment.yaml --ignore-not-found
+kubectl -n "$namespace" apply -f kubernetes/deployments/market-intel-engine.deployment.yaml
 
 # Delete and recreate health check cronjob
 kubectl -n "$namespace" delete cronjob health-check-cronjob --ignore-not-found

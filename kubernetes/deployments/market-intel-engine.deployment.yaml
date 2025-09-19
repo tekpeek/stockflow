@@ -33,4 +33,4 @@ spec:
           imagePullPolicy: Always
           ports:
             - containerPort: 8000
-              name: se-port
+              name: mie-port

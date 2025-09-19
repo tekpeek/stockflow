@@ -138,8 +138,14 @@ else
 fi
 
 # Delete and recreate market-intel-engine microservice
-kubectl -n "$namespace" delete deployment kubernetes/deployments/market-intel-engine.deployment.yaml --ignore-not-found
+kubectl -n "$namespace" delete deployment market-intel-engine --ignore-not-found
 kubectl -n "$namespace" apply -f kubernetes/deployments/market-intel-engine.deployment.yaml
+
+# Delete and recreate market-intel-engine-service
+kubectl -n "$namespace" delete service market-intel-engine-service --ignore-not-found
+kubectl -n "$namespace" apply -f kubernetes/services/market-intel-engine-service.yaml
+
+check_deployment "market-intel-engine"
 
 # Delete and recreate health check cronjob
 kubectl -n "$namespace" delete cronjob health-check-cronjob --ignore-not-found

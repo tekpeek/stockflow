@@ -19,6 +19,9 @@ def identify_stocks():
 
     return [final_buy_list, error_list]
 
+def perform_market_sentiment_analysis(ticker_list):
+    
+
 if __name__ == "__main__":
     list_data = identify_stocks()
     if len(list_data[0])>0 or len(list_data[1])>0:

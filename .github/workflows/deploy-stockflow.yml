@@ -15,9 +15,10 @@ jobs:
    - name: Checkout
      uses: actions/checkout@v2
  
-   - name: deploy-microservice
+   - name: deploy-microservices
      env:
        SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
        SF_API_KEY: ${{ secrets.SF_API_KEY }}
+       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
      run: |
        bash deploy_project.sh

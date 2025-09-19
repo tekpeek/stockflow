@@ -22,6 +22,7 @@ def health_check():
     is_healthy = True
     se_healthy = check_service_health("https://tekpeek.duckdns.org/api/health")
     sc_healthy = check_service_health("https://tekpeek.duckdns.org/api/admin/health")
+    mie_healthy = check_service_health("http://market-intel-engine-service:8000/health")
 
     if not se_healthy:
         is_healthy = False
@@ -29,6 +30,9 @@ def health_check():
     if not sc_healthy:
         is_healthy = False
         issues.append("stockflow-controller")
+    if not mie_healthy:
+        is_healthy = False
+        issues.append("market-intel-engine")
 
     return [is_healthy, issues]
 

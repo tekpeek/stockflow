@@ -34,3 +34,11 @@ jobs:
        file: ./dockerfiles/Dockerfile.stockflow-controller
        push: true
        tags: kingaiva/stockflow-controller:dev
+
+    - name: Build and push market-intel-engine
+      uses: docker/build-push-action@v5
+      with:
+       context:
+       file: ./dockerfiles/Dockerfile.market-intel-engine
+       push: true
+       tags: kingaiva/market-intel-engine:dev

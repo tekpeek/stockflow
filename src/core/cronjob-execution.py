@@ -2,25 +2,27 @@ import top_500_nse_tickers
 import smtp_email_trigger as email_trigger
 import os
 import json
+import requests
 
 def fetch_openai_analysis(url, prompt, retries=3, timeout=240):
-    output=""
     for attempt in range(retries):
-        # Properly escape the prompt for JSON
-        json_data = json.dumps({"prompt": prompt})
-        print("json_data: ",json_data)
-        output = os.popen(f"curl -s --max-time {timeout} -X POST -H 'Content-Type: application/json' {url} -d '{json_data}' | jq -r .").read().strip()
-        print(output)
-        output = json.dumps(output)
-        print(output)
-        result = os.popen(f"echo {output} | jq -r .result").read().strip()
-        print(f"output for {url}: {output} : attempt: {attempt}")
+        response = requests.post(url,json={"prompt":prompt},timeout=timeout)
+        parsed_response = response.json()
+        keys = list(parsed_response.keys())
+        if "mie_analysis" not in keys:
+            parsed_response = json.loads(parsed_response[keys[0]])
+        print(parsed_response)
+        status = parsed_response["mie_analysis"]
+        status = status["status"]
+        print(f"output for {url}: {parsed_response} : attempt: {attempt}")
         print("*****************")
-        if result == "failed":
+        if status == "failed":
             continue
         else:
-            return output  # Wait 1 second before retrying
-    return output
+            return parsed_response # Wait 1 second before retrying
+    if status == "failed":
+        raise Exception(f"Analysis failed. Response : {parsed_response}")
+    return parsed_response
 
 def identify_stocks():
     final_buy_list = []
@@ -51,10 +53,14 @@ that will grow in the coming 2-7 days."""
         prompt = file.read()
         prompt = prompt.replace("__TICKER_LIST__",str(ticker_list))
     file.close()
-    ai_result = fetch_openai_analysis("http://10.42.0.188:8000/chat",prompt)
-    print(ai_result)
+    mie_analysis = fetch_openai_analysis("http://10.42.0.197:8000/chat",prompt)
+    
+
+    
 
 if __name__ == "__main__":
+    perform_market_sentiment_analysis(["AIRTEL.NS"])
+    exit(0)
     list_data = identify_stocks()
     perform_market_sentiment_analysis(list_data[2])
     exit(0)

@@ -54,15 +54,17 @@ that will grow in the coming 2-7 days."""
         prompt = prompt.replace("__TICKER_LIST__",str(ticker_list))
     file.close()
     mie_analysis = fetch_openai_analysis("http://10.42.0.197:8000/chat",prompt)
-    
-
-    
+    final_list=[]
+    for i in range(len(mie_analysis["mie_analysis"]["results"])):
+        if mie_analysis["mie_analysis"]["results"][i]["buy_rating"] >=5:
+            final_list.append(mie_analysis["mie_analysis"]["results"][i])
+    return final_list
 
 if __name__ == "__main__":
-    perform_market_sentiment_analysis(["AIRTEL.NS"])
-    exit(0)
-    list_data = identify_stocks()
-    perform_market_sentiment_analysis(list_data[2])
-    exit(0)
-    if len(list_data[0])>0 or len(list_data[1])>0:
-        email_trigger.send_email(list_data[0],list_data[1])
+    final_list = perform_market_sentiment_analysis(["AIRTEL.NS"])
+    #list_data = identify_stocks()
+    #perform_market_sentiment_analysis(list_data[2])
+    if len(final_list)>0:
+        email_trigger.send_email(final_list,[])
+    #if len(list_data[0])>0 or len(list_data[1])>0:
+    #    email_trigger.send_email(list_data[0],list_data[1])

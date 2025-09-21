@@ -6,14 +6,18 @@ import requests
 
 def fetch_openai_analysis(url, prompt, retries=3, timeout=240):
     for attempt in range(retries):
-        response = requests.post(url,json={"prompt":prompt},timeout=timeout)
-        parsed_response = response.json()
-        keys = list(parsed_response.keys())
-        if "mie_analysis" not in keys:
-            parsed_response = json.loads(parsed_response[keys[0]])
-        print(parsed_response)
-        status = parsed_response["mie_analysis"]
-        status = status["status"]
+        try:
+            response = requests.post(url,json={"prompt":prompt},timeout=timeout)
+            parsed_response = response.json()
+            keys = list(parsed_response.keys())
+            if "mie_analysis" not in keys:
+                parsed_response = json.loads(parsed_response[keys[0]])
+            print(parsed_response)
+            status = parsed_response["mie_analysis"]
+            status = status["status"]
+        except Exception as e:
+            print(f"Error parsing output from openai. Error : {e}")
+            raise
         print(f"output for {url}: {parsed_response} : attempt: {attempt}")
         print("*****************")
         if status == "failed":
@@ -45,11 +49,11 @@ def identify_stocks():
 
 def perform_market_sentiment_analysis(ticker_list):
     prompt=""
-    with open("../prompts/market_analysis_prompt.txt") as file:
+    with open("/home/ubuntu/app/market_analysis_prompt.txt") as file:
         prompt = file.read()
         prompt = prompt.replace("__TICKER_LIST__",str(ticker_list))
     file.close()
-    mie_analysis = fetch_openai_analysis("http://10.42.0.197:8000/chat",prompt)
+    mie_analysis = fetch_openai_analysis("http://market-intel-engine-service:8000/chat",prompt)
     final_list=[]
     for i in range(len(mie_analysis["mie_analysis"]["results"])):
         if mie_analysis["mie_analysis"]["results"][i]["buy_rating"] >=5:

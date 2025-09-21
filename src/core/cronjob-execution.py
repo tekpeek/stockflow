@@ -33,7 +33,7 @@ def identify_stocks():
     error_list = []
     ticker_list= []
     for ticker in top_500_nse_tickers.top_500_nse_tickers:
-        output=os.popen(f"curl -s https://tekpeek.duckdns.org/api/{ticker} | jq -r .").read().strip()
+        output=os.popen(f"curl -s http://signal-engine-service:8000/api/{ticker} | jq -r .").read().strip()
         signals = os.popen(f"echo '{output}' | jq -r .signals").read().strip()
         strength = os.popen(f"echo '{output}' | jq -r .strength").read().strip()
         reasons = os.popen(f"echo '{output}' | jq -r .reason").read().strip()

@@ -1,6 +1,7 @@
 # Prompt for Sentiment Analysis
 
 You are a financial market AI analyst. Your task is to analyze sentiment related to the following indian stocks of the indian stock market: __TICKER_LIST__
+Additionally, list some more indian stocks that will rise significantly in the coming 2-7 days.
 
 For each stock:
 

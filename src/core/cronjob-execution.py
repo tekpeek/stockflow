@@ -45,10 +45,6 @@ def identify_stocks():
 
 def perform_market_sentiment_analysis(ticker_list):
     prompt=""
-    if len(ticker_list) == 0:
-        ticker_list="""NULL.
-As the technical analysis microservice has returned empty list, analyse the current indian stock market and suggest some stocks
-that will grow in the coming 2-7 days."""
     with open("../prompts/market_analysis_prompt.txt") as file:
         prompt = file.read()
         prompt = prompt.replace("__TICKER_LIST__",str(ticker_list))
@@ -61,10 +57,8 @@ that will grow in the coming 2-7 days."""
     return final_list
 
 if __name__ == "__main__":
-    final_list = perform_market_sentiment_analysis(["AIRTEL.NS"])
-    #list_data = identify_stocks()
-    #perform_market_sentiment_analysis(list_data[2])
+    list_data = identify_stocks()
+    final_list = perform_market_sentiment_analysis(list_data[0])
     if len(final_list)>0:
         email_trigger.send_email(final_list,[])
-    #if len(list_data[0])>0 or len(list_data[1])>0:
-    #    email_trigger.send_email(list_data[0],list_data[1])
+        print("Email Sent")

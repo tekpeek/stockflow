@@ -38,6 +38,9 @@ spec:
               - name: cronjob-config-volume
                 mountPath: /home/ubuntu/app/smtp_email_trigger.py
                 subPath: smtp_email_trigger.py
+              - name: cronjob-config-volume
+                mountPath: /home/ubuntu/app/market_analysis_prompt.txt
+                subPath: market_analysis_prompt.txt
           restartPolicy: OnFailure
           volumes:
             - name: cronjob-config-volume

@@ -59,6 +59,7 @@ async def push_prompt(item: Item):
                 "content": f"{item.prompt}",
             },
         ],
+        response_format={"type": "json_object"}
         )
     except Exception as e:
         logging.info(f"API call failed. Error: {e}")

@@ -14,12 +14,14 @@ def send_email(stock_list,error_list):
     # Format stock details
     stock_details = ""
     for stock in stock_list:
-        ticker, signals, strength, reasons = stock
+        symbol, buy_rating, overall_sentiment, key_drivers, confidence, summary = stock["symbol"], stock["buy_rating"], stock["overall_sentiment"], str(stock["key_drivers"]), stock["confidence"], stock["summary"] 
         stock_details += f"""
-Stock: {ticker}
-Signals: {signals}
-Strength: {strength}
-Reasons: {reasons}
+Stock: {symbol}
+Buy Rating: {buy_rating}
+Overall Sentiment: {overall_sentiment}
+Key Drivers: {key_drivers}
+Confidence: {confidence}
+Summary: {summary}
 {'-' * 30}
         """
     

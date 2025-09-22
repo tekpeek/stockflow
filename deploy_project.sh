@@ -28,6 +28,9 @@ check_deployment() {
 
 if [[ ! -z $1 ]]; then
     export namespace=$1
+    if [[ ! -z $2 ]]; then
+    echo "Shifting to dev deployment"
+    fi
 fi
 echo "Namespace set to $namespace"
 namespace_list=($(kubectl get namespaces -o json | jq -r .items[].metadata.name))

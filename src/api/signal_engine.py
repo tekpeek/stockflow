@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 import uvicorn
+from fastapi import APIRouter
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -38,6 +39,12 @@ def convert_bools_to_strings(data):
 
 signal_engine = FastAPI()
 
+if DEPLOY_TYPE != "":
+    DEPLOY_TYPE = f"/{DEPLOY_TYPE}"
+
+router = APIRouter(prefix=f"{DEPLOY_TYPE}")
+signal_engine.include_router(router)
+
 # Add CORS middleware
 signal_engine.add_middleware(
     CORSMiddleware,
@@ -47,7 +54,7 @@ signal_engine.add_middleware(
     allow_headers=["*"],  # Allows all headers
 )
 
-@signal_engine.get(f"{DEV_TYPE}/api/health")
+@signal_engine.get("/api/health")
 def health_check():
     if MAINTENANCE_STATUS == "on":
         return JSONResponse({"status": "Maintenance mode is enabled"})
@@ -57,7 +64,7 @@ def health_check():
             "timestamp": f"{time_stamp}"
     })
 
-@signal_engine.get(f"{DEV_TYPE}/api/{stock_id}")
+@signal_engine.get("/api/{stock_id}")
 def get_stock_data(
     stock_id: str,
     interval: str = DEFAULT_INTERVAL,
@@ -83,7 +90,7 @@ def get_stock_data(
         logger.warning(f"Invalid format: {stock_id}")
         return JSONResponse({"error": "Incorrect Stock ID. Stock ID must end with .NS"})
     
-@signal_engine.get(f"{DEV_TYPE}/api/{stock_id}/{option}")
+@signal_engine.get("/api/{stock_id}/{option}")
 def get_stock_data(
     stock_id: str,
     option: str = 'rsi',

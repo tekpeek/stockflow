@@ -61,8 +61,8 @@ kubectl -n "$namespace" create configmap maintenance-config \
 
 # Delete old deployment and deploy the signal engine server
 kubectl -n "$namespace" delete deployment signal-engine --ignore-not-found
-sed "s|__DEPLOY_TYPE__|${DEPLOY_TYPE}|g" kubernetes/deployments/signal-engine-deployment.yaml
-kubectl -n "$namespace" apply -f kubernetes/deployments/signal-engine-deployment.yaml
+sed "s|__DEPLOY_TYPE__|${DEPLOY_TYPE}|g" kubernetes/deployments/signal-engine-deployment.yaml > signal-engine-deploy.yaml
+kubectl -n "$namespace" apply -f signal-engine-deploy.yaml
 
 # Verifying if the signal-engine is in running status
 check_deployment "signal-engine"
@@ -128,7 +128,8 @@ kubectl -n "$namespace" apply -f kubernetes/services/stockflow-controller-servic
 
 # Delete and recreate stockflow-controller microservice
 kubectl -n "$namespace" delete deployment stockflow-controller --ignore-not-found
-kubectl -n "$namespace" apply -f kubernetes/deployments/stockflow-controller-deployment.yaml
+sed "s|__DEPLOY_TYPE__|${DEPLOY_TYPE}|g" kubernetes/deployments/stockflow-controller-deployment.yaml > controller-deploy.yaml
+kubectl -n "$namespace" apply -f controller-deploy.yaml
 
 # Verifying if the stockflow-controller is in running status
 check_deployment "stockflow-controller"

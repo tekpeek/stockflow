@@ -25,6 +25,7 @@ DEFAULT_PERIOD = int(os.getenv("PERIOD"))
 DEFAULT_WINDOW = int(os.getenv("WINDOW"))
 DEFAULT_NUM_STD = float(os.getenv("NUM_STD"))
 MAINTENANCE_STATUS = os.getenv("MAINTENANCE_STATUS")
+DEPLOY_TYPE = os.getenv("DEPLOY_TYPE")
 
 def convert_bools_to_strings(data):
     if isinstance(data, dict):
@@ -46,7 +47,7 @@ signal_engine.add_middleware(
     allow_headers=["*"],  # Allows all headers
 )
 
-@signal_engine.get("/api/health")
+@signal_engine.get(f"{DEV_TYPE}/api/health")
 def health_check():
     if MAINTENANCE_STATUS == "on":
         return JSONResponse({"status": "Maintenance mode is enabled"})
@@ -56,7 +57,7 @@ def health_check():
             "timestamp": f"{time_stamp}"
     })
 
-@signal_engine.get("/api/{stock_id}")
+@signal_engine.get(f"{DEV_TYPE}/api/{stock_id}")
 def get_stock_data(
     stock_id: str,
     interval: str = DEFAULT_INTERVAL,
@@ -82,7 +83,7 @@ def get_stock_data(
         logger.warning(f"Invalid format: {stock_id}")
         return JSONResponse({"error": "Incorrect Stock ID. Stock ID must end with .NS"})
     
-@signal_engine.get("/api/{stock_id}/{option}")
+@signal_engine.get(f"{DEV_TYPE}/api/{stock_id}/{option}")
 def get_stock_data(
     stock_id: str,
     option: str = 'rsi',

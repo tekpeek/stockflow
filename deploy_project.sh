@@ -33,6 +33,11 @@ if [[ ! -z $1 ]]; then
     fi
 fi
 echo "Namespace set to $namespace"
+
+if [[ namespace != "default" ]]; then
+    export DEPLOY_TYPE="$namespace"
+fi
+
 namespace_list=($(kubectl get namespaces -o json | jq -r .items[].metadata.name))
 if [[ "${namespace_list[*]}" =~ "$namespace "* ]] || [[ "${namespace_list[*]}" =~ *" $namespace" ]] || [[ "${namespace_list[*]}" =~ *" $namespace "* ]]; then
     echo "$namespace already present"
@@ -56,6 +61,7 @@ kubectl -n "$namespace" create configmap maintenance-config \
 
 # Delete old deployment and deploy the signal engine server
 kubectl -n "$namespace" delete deployment signal-engine --ignore-not-found
+sed "s|__DEPLOY_TYPE__|${DEPLOY_TYPE}|g" kubernetes/deployments/signal-engine-deployment.yaml
 kubectl -n "$namespace" apply -f kubernetes/deployments/signal-engine-deployment.yaml
 
 # Verifying if the signal-engine is in running status

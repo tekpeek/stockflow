@@ -26,6 +26,8 @@ spec:
                   key: api-key
             - name: PORT
               value: "9000"
+            - name: DEPLOY_TYPE
+              value: __DEPLOY_TYPE__
           imagePullPolicy: Always
           ports:
             - containerPort: 9000

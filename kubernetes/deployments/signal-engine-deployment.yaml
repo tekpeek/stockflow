@@ -16,7 +16,7 @@ spec:
       spec:
         containers:
         - name: signal-engine
-          image: kingaiva/signal-engine:dev
+          image: kingaiva/signal-engine:stable
           env:
             - name: INTERVAL
               valueFrom:

@@ -17,7 +17,7 @@ spec:
         serviceAccountName: controller-svc-acc
         containers:
         - name: stockflow-controller
-          image: kingaiva/stockflow-controller:dev
+          image: kingaiva/stockflow-controller:stable
           env:
             - name: SF_API_KEY
               valueFrom:

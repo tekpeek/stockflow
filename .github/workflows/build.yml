@@ -25,7 +25,7 @@ jobs:
        context:
        file: ./dockerfiles/Dockerfile.signal-engine
        push: true
-       tags: kingaiva/signal-engine:dev
+       tags: kingaiva/signal-engine:stable
     
     - name: Build and push stockflow-controller
       uses: docker/build-push-action@v5
@@ -33,7 +33,7 @@ jobs:
        context:
        file: ./dockerfiles/Dockerfile.stockflow-controller
        push: true
-       tags: kingaiva/stockflow-controller:dev
+       tags: kingaiva/stockflow-controller:stable
 
     - name: Build and push market-intel-engine
       uses: docker/build-push-action@v5
@@ -41,4 +41,4 @@ jobs:
        context:
        file: ./dockerfiles/Dockerfile.market-intel-engine
        push: true
-       tags: kingaiva/market-intel-engine:dev
+       tags: kingaiva/market-intel-engine:stable

@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 import uvicorn
+from fastapi import APIRouter
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -25,6 +26,7 @@ DEFAULT_PERIOD = int(os.getenv("PERIOD"))
 DEFAULT_WINDOW = int(os.getenv("WINDOW"))
 DEFAULT_NUM_STD = float(os.getenv("NUM_STD"))
 MAINTENANCE_STATUS = os.getenv("MAINTENANCE_STATUS")
+DEPLOY_TYPE = os.getenv("DEPLOY_TYPE")
 
 def convert_bools_to_strings(data):
     if isinstance(data, dict):
@@ -37,6 +39,11 @@ def convert_bools_to_strings(data):
 
 signal_engine = FastAPI()
 
+if DEPLOY_TYPE != "":
+    DEPLOY_TYPE = "/"+DEPLOY_TYPE
+
+router = APIRouter()
+
 # Add CORS middleware
 signal_engine.add_middleware(
     CORSMiddleware,
@@ -46,7 +53,7 @@ signal_engine.add_middleware(
     allow_headers=["*"],  # Allows all headers
 )
 
-@signal_engine.get("/api/health")
+@router.get("/api/health")
 def health_check():
     if MAINTENANCE_STATUS == "on":
         return JSONResponse({"status": "Maintenance mode is enabled"})
@@ -56,7 +63,7 @@ def health_check():
             "timestamp": f"{time_stamp}"
     })
 
-@signal_engine.get("/api/{stock_id}")
+@router.get("/api/{stock_id}")
 def get_stock_data(
     stock_id: str,
     interval: str = DEFAULT_INTERVAL,
@@ -82,7 +89,7 @@ def get_stock_data(
         logger.warning(f"Invalid format: {stock_id}")
         return JSONResponse({"error": "Incorrect Stock ID. Stock ID must end with .NS"})
     
-@signal_engine.get("/api/{stock_id}/{option}")
+@router.get("/api/{stock_id}/{option}")
 def get_stock_data(
     stock_id: str,
     option: str = 'rsi',
@@ -111,6 +118,8 @@ def get_stock_data(
         logger.warning(f"Invalid format: {stock_id}")
         return JSONResponse({"error": "Incorrect Stock ID. Stock ID must end with .NS"})
 
+
+signal_engine.include_router(router,prefix=DEPLOY_TYPE)
 if __name__ == "__main__":
     logger.info("Starting up signal-engine server")
     uvicorn.run("signal_engine:signal_engine", host="0.0.0.0", port=8000, log_level="info")

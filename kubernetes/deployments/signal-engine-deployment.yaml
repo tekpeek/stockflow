@@ -16,7 +16,7 @@ spec:
       spec:
         containers:
         - name: signal-engine
-          image: kingaiva/signal-engine:dev
+          image: kingaiva/signal-engine:stable
           env:
             - name: INTERVAL
               valueFrom:
@@ -40,6 +40,8 @@ spec:
                   key: num_std
             - name: PORT
               value: "8000"
+            - name: DEPLOY_TYPE
+              value: __DEPLOY_TYPE__
             - name: MAINTENANCE_STATUS
               valueFrom:
                 configMapKeyRef:

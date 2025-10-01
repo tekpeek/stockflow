@@ -9,6 +9,7 @@ from typing import Dict, Any
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi import APIRouter
 import os
 
 logging.basicConfig(
@@ -18,6 +19,7 @@ logging.basicConfig(
     force=True
 )
 logger = logging.getLogger(__name__)
+DEPLOY_TYPE = os.getenv("DEPLOY_TYPE")
 
 try:
     config.load_incluster_config()
@@ -28,6 +30,11 @@ v1 = client.BatchV1Api()
 v1_core = client.CoreV1Api()
 v1_core_apps = client.AppsV1Api()
 stockflow_controller = FastAPI()
+
+if DEPLOY_TYPE != "":
+    DEPLOY_TYPE = "/"+DEPLOY_TYPE
+
+router = APIRouter()
 
 # Add CORS middleware
 stockflow_controller.add_middleware(
@@ -55,7 +62,7 @@ def check_cronjob_exists() -> bool:
         logger.error(f"Cronjob not found: {str(e)}")
         return False
 
-@stockflow_controller.get("/api/admin/health")
+@router.get("/api/admin/health")
 def health_check():
     time_stamp = datetime.datetime.now(datetime.UTC)
     return JSONResponse({
@@ -63,7 +70,7 @@ def health_check():
             "timestamp": f"{time_stamp}"
     })
 
-@stockflow_controller.get("/api/admin/maintenance/status")
+@router.get("/api/admin/maintenance/status")
 async def get_maintenance_status():
     time_stamp = datetime.datetime.now(datetime.UTC)
     configmap = v1_core.read_namespaced_config_map(name="maintenance-config",namespace="default")
@@ -73,7 +80,7 @@ async def get_maintenance_status():
         "timestamp": f"{time_stamp}"
     })
 
-@stockflow_controller.get("/api/admin/maintenance/{status}")
+@router.get("/api/admin/maintenance/{status}")
 async def enable_maintenance(status: str, dep=Depends(api_key_auth)) -> Dict[str, Any]:
     time_stamp = datetime.datetime.now(datetime.UTC)
     if status == "on":
@@ -112,7 +119,7 @@ async def enable_maintenance(status: str, dep=Depends(api_key_auth)) -> Dict[str
         })
     
 
-@stockflow_controller.get("/api/admin/trigger-cron")
+@router.get("/api/admin/trigger-cron")
 async def trigger_cronjob(dep=Depends(api_key_auth)) -> Dict[str, Any]:
     if not check_cronjob_exists():
         return JSONResponse(
@@ -173,7 +180,7 @@ async def trigger_cronjob(dep=Depends(api_key_auth)) -> Dict[str, Any]:
             status_code=500,
             content={"status": "error", "detail": f"Unexpected error: {str(e)}"}
         )
-
+stockflow_controller.include_router(router,prefix=DEPLOY_TYPE)
 if __name__ == "__main__":
     logger.info("Starting up stockflow controller server")
     uvicorn.run("stockflow_controller:stockflow_controller", host="0.0.0.0", port=9000, log_level="info")

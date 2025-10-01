@@ -16,7 +16,7 @@ spec:
       spec:
         containers:
         - name: market-intel-engine
-          image: kingaiva/market-intel-engine:dev
+          image: kingaiva/market-intel-engine:stable
           env:
             - name: PORT
               value: "8000"

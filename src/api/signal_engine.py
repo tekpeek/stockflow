@@ -41,8 +41,6 @@ signal_engine = FastAPI()
 
 if DEPLOY_TYPE != "default":
     DEPLOY_TYPE = "/"+DEPLOY_TYPE
-else:
-    DEPLOY_TYPE = "/"
 
 router = APIRouter()
 
@@ -120,8 +118,10 @@ def get_stock_data(
         logger.warning(f"Invalid format: {stock_id}")
         return JSONResponse({"error": "Incorrect Stock ID. Stock ID must end with .NS"})
 
-
-signal_engine.include_router(router,prefix=DEPLOY_TYPE)
+if DEPLOY_TYPE != "default":
+    signal_engine.include_router(router,prefix=DEPLOY_TYPE)
+else:
+    signal_engine.include_router(router)
 if __name__ == "__main__":
     logger.info("Starting up signal-engine server")
     uvicorn.run("signal_engine:signal_engine", host="0.0.0.0", port=8000, log_level="info")

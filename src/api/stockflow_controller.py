@@ -33,8 +33,6 @@ stockflow_controller = FastAPI()
 
 if DEPLOY_TYPE != "default":
     DEPLOY_TYPE = "/"+DEPLOY_TYPE
-else:
-    DEPLOY_TYPE = "/"
 
 router = APIRouter()
 
@@ -182,7 +180,10 @@ async def trigger_cronjob(dep=Depends(api_key_auth)) -> Dict[str, Any]:
             status_code=500,
             content={"status": "error", "detail": f"Unexpected error: {str(e)}"}
         )
-stockflow_controller.include_router(router,prefix=DEPLOY_TYPE)
+if DEPLOY_TYPE != "default":
+    stockflow_controller.include_router(router,prefix=DEPLOY_TYPE)
+else:
+    stockflow_controller.include_router(router)
 if __name__ == "__main__":
     logger.info("Starting up stockflow controller server")
     uvicorn.run("stockflow_controller:stockflow_controller", host="0.0.0.0", port=9000, log_level="info")

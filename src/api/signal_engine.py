@@ -39,7 +39,7 @@ def convert_bools_to_strings(data):
 
 signal_engine = FastAPI()
 
-if DEPLOY_TYPE != "":
+if DEPLOY_TYPE != "default":
     DEPLOY_TYPE = "/"+DEPLOY_TYPE
 
 router = APIRouter()

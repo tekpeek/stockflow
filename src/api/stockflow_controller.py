@@ -31,7 +31,7 @@ v1_core = client.CoreV1Api()
 v1_core_apps = client.AppsV1Api()
 stockflow_controller = FastAPI()
 
-if DEPLOY_TYPE != "":
+if DEPLOY_TYPE != "default":
     DEPLOY_TYPE = "/"+DEPLOY_TYPE
 
 router = APIRouter()

@@ -33,6 +33,8 @@ stockflow_controller = FastAPI()
 
 if DEPLOY_TYPE != "default":
     DEPLOY_TYPE = "/"+DEPLOY_TYPE
+else:
+    DEPLOY_TYPE = "/"
 
 router = APIRouter()
 

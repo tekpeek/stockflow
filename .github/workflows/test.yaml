@@ -15,6 +15,6 @@ jobs:
    - name: Checkout
      uses: actions/checkout@v2
  
-   - name: test
+   - name: test-services
      run: |
        bash test_deploy.sh

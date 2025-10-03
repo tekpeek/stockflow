@@ -1,0 +1,20 @@
+---
+name: test-deployment
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows:
+      - deploy-stockflow
+    types:
+      - completed
+jobs:
+ build:
+   name: test-deployment
+   runs-on: self-hosted
+   steps:
+   - name: Checkout
+     uses: actions/checkout@v2
+ 
+   - name: test-services
+     run: |
+       bash test_deploy.sh

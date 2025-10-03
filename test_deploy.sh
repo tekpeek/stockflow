@@ -10,6 +10,7 @@ log_message(){
 signal_engine_health=$(curl -s -X GET https://tekpeek.duckdns.org/api/health | jq -r .status)
 if [[ "$signal_engine_health" != "OK" ]]; then
     log_message "ERROR" "Health Check API not working for Signal Engine!"
+    exit 1
 else
     log_message "INFO" "Signal Engine Status : $signal_engine_health"
 fi
@@ -17,6 +18,7 @@ fi
 stockflow_controller_health=$(curl -s -X GET https://tekpeek.duckdns.org/api/admin/health | jq -r .status)
 if [[ "$stockflow_controller_health" != "OK" ]]; then
     log_message "ERROR" "Health Check API not working for Stockflow Controller!"
+    exit 1
 else
     log_message "INFO" "Stockflow Controller Status : $stockflow_controller_health"
 fi

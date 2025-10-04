@@ -23,4 +23,12 @@ else
     log_message "INFO" "Stockflow Controller Status : $stockflow_controller_health"
 fi
 
+# Dummy Signal Generation Test
+dummy_signal=$(curl -s -X GET https://tekpeek.duckdns.org/api/RELIANCE.NS | jq -r .buy)
+if [[ "$dummy_signal" != "true" ]] || [[ "$dummy_signal" != "false" ]]; then
+    log_message "ERROR" "API Error! Endpoint [/api] endpoint not working."
+else
+    log_message "INFO" "Endpoint [/api] check completed."
+fi
+
 log_message "INFO" "Test Deployment Execution Completed."

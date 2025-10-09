@@ -1,0 +1,45 @@
+    <!-- Responsive Stock Table -->
+    <mj-section background-color="#FFFFFF" padding="0 25px 25px">
+      <mj-column>
+        <mj-raw>
+          <table class="stock-table">
+            <thead>
+              <tr>
+                <th>Symbol</th>
+                <th>Signal</th>
+                <th>Strength</th>
+                <th>Remarks</th>
+              </tr>
+            </thead>
+            <tbody>
+              {{STOCK_ROWS}}
+            </tbody>
+          </table>
+        </mj-raw>
+      </mj-column>
+    </mj-section>
+
+    <!-- Notes -->
+    <mj-section background-color="#FFFFFF" padding="10px 25px 25px">
+      <mj-column>
+        <mj-text font-size="13px" color="#777777">
+          <em>* Data generated automatically by StockFlow’s signal engine using MACD, RSI, Bollinger Bands, and CMF indicators along with OpenAI GPT-5.</em>
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <!-- Footer -->
+    <mj-section background-color="#F4F5F6" padding="30px 0">
+      <mj-column>
+        <mj-text align="center" font-size="12px" color="#999999">
+          © 2025 StockFlow by Avinash S<br />
+          Automated Market Insights
+        </mj-text>
+        <mj-text align="center" font-size="12px" color="#BBBBBB">
+          You’re receiving this update because you subscribed to StockFlow alerts.
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+  </mj-body>
+</mjml>

@@ -41,6 +41,9 @@ spec:
               - name: cronjob-config-volume
                 mountPath: /home/ubuntu/app/market_analysis_prompt.txt
                 subPath: market_analysis_prompt.txt
+              - name: cronjob-config-volume
+                mountPath: /home/ubuntu/app/email-template.html
+                subPath: email-template.html
           restartPolicy: OnFailure
           volumes:
             - name: cronjob-config-volume

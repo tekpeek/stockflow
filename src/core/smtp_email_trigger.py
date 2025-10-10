@@ -4,6 +4,17 @@ import smtplib
 from email.message import EmailMessage
 from email.utils import formataddr
 from datetime import datetime
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+
+def prepare_template():
+    #with open("email-template.mjml") as f:
+    #    template = f.read()
+    #compiled_html = MJML(template).render()
+    with open("email-template.html") as f:
+        html = f.read()
+    compiled_html = html
+    return compiled_html
 
 def send_email(stock_list,error_list):
     current_datetime = datetime.now().strftime("%B %d %Y - %I:%M %p")
@@ -42,16 +53,20 @@ Market Tracker
 
 This is an automated message. Please do not reply.
     """
+    body=prepare_template()
     smtp_user = "noreply.avinash.s@gmail.com"
     smtp_password = os.getenv("SMTP_PASSWORD")
     smtp_port = os.getenv("SMTP_PORT")
     reciever = "kingaiva@icloud.com"
-    msg = EmailMessage()
+    msg = MIMEMultipart("alternative")
     msg['Subject'] = subject
     msg['From'] = formataddr(("Market Monitor", sender_addr))
     msg['To'] = reciever
-    msg.set_content(body)
+    msg.attach(MIMEText(body, "html"))
+    #msg.set_content(body)
     server = smtplib.SMTP(smtp_host,smtp_port)    
     server.starttls()
     server.login(smtp_user,smtp_password)
     server.send_message(msg)
+
+send_email([],[])

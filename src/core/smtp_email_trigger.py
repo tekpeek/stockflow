@@ -4,6 +4,33 @@ import smtplib
 from email.message import EmailMessage
 from email.utils import formataddr
 from datetime import datetime
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+
+def prepare_template(stock_list=None):
+    with open("/home/ubuntu/app/email-template.html") as f:
+        html = f.read()
+    
+    if stock_list:
+        # Generate table rows from stock_list
+        rows_html = ""
+        for stock in stock_list:
+            symbol, buy_rating, overall_sentiment, key_drivers, confidence, summary = stock["symbol"], stock["buy_rating"], stock["overall_sentiment"], str(stock["key_drivers"]), stock["confidence"], stock["summary"] 
+            
+            rows_html += f"""
+            <tr>
+                <td style="padding:10px; border-bottom:1px solid #eaeaea;">{symbol}</td>
+                <td style="padding:10px; border-bottom:1px solid #eaeaea;">{buy_rating}</td>
+                <td style="padding:10px; border-bottom:1px solid #eaeaea;">{overall_sentiment}</td>
+                <td style="padding:10px; border-bottom:1px solid #eaeaea;">{key_drivers}</td>
+                <td style="padding:10px; border-bottom:1px solid #eaeaea;">{confidence}</td>
+                <td style="padding:10px; border-bottom:1px solid #eaeaea;">{summary}</td>
+            </tr>"""
+        
+        # Replace placeholder with generated rows
+        html = html.replace("{{STOCK_ROWS}}", rows_html)
+    
+    return html
 
 def send_email(stock_list,error_list):
     current_datetime = datetime.now().strftime("%B %d %Y - %I:%M %p")
@@ -12,45 +39,17 @@ def send_email(stock_list,error_list):
     smtp_host = os.getenv("SMTP_HOST")
     
     # Format stock details
-    stock_details = ""
-    for stock in stock_list:
-        symbol, buy_rating, overall_sentiment, key_drivers, confidence, summary = stock["symbol"], stock["buy_rating"], stock["overall_sentiment"], str(stock["key_drivers"]), stock["confidence"], stock["summary"] 
-        stock_details += f"""
-Stock: {symbol}
-Buy Rating: {buy_rating}
-Overall Sentiment: {overall_sentiment}
-Key Drivers: {key_drivers}
-Confidence: {confidence}
-Summary: {summary}
-{'-' * 30}
-        """
-    
-    body = f"""
-Hello,
-
-Your stock analyzer has identified new buy signals based on today's market data.
-
-Buy Signals Detected:
-{stock_details}
-
-Errored Stock(s): {error_list}
-
-Thank you,
-Market Tracker
-
----
-
-This is an automated message. Please do not reply.
-    """
+    body=prepare_template(stock_list)
     smtp_user = "noreply.avinash.s@gmail.com"
     smtp_password = os.getenv("SMTP_PASSWORD")
     smtp_port = os.getenv("SMTP_PORT")
     reciever = "kingaiva@icloud.com"
-    msg = EmailMessage()
+    msg = MIMEMultipart("alternative")
     msg['Subject'] = subject
     msg['From'] = formataddr(("Market Monitor", sender_addr))
     msg['To'] = reciever
-    msg.set_content(body)
+    msg.attach(MIMEText(body, "html"))
+    #msg.set_content(body)
     server = smtplib.SMTP(smtp_host,smtp_port)    
     server.starttls()
     server.login(smtp_user,smtp_password)

@@ -1,0 +1,151 @@
+<!doctype html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml"
+  xmlns:o="urn:schemas-microsoft-com:office:office">
+
+<head>
+  <title>StockFlow Daily Summary</title>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style type="text/css">
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #F5F7FA;
+      font-family: Arial, sans-serif;
+    }
+
+    table {
+      border-collapse: collapse;
+    }
+
+    .email-container {
+      max-width: 600px;
+      margin: 30px auto;
+      background-color: #FFFFFF;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      overflow: hidden;
+    }
+
+    .header {
+      background-color: #354F52;
+      color: white;
+      text-align: center;
+      padding: 20px;
+      font-size: 22px;
+      font-weight: bold;
+      letter-spacing: 0.5px;
+    }
+
+    .content {
+      padding: 25px;
+      color: #2F3E46;
+      line-height: 1.6;
+    }
+
+    .content h2 {
+      font-size: 18px;
+      margin-bottom: 10px;
+      color: #52796F;
+    }
+
+    .stock-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    .stock-table th {
+      background-color: #52796F;
+      color: white;
+      padding: 10px;
+      font-size: 13px;
+      text-align: left;
+    }
+
+    .stock-table td {
+      padding: 10px;
+      border-bottom: 1px solid #EAEAEA;
+      font-size: 13px;
+      color: #333;
+    }
+
+    .footer {
+      background-color: #CAD2C5;
+      text-align: center;
+      padding: 15px;
+      font-size: 12px;
+      color: #2F3E46;
+    }
+
+    @media only screen and (max-width: 600px) {
+      .email-container {
+        width: 95% !important;
+        margin: 10px auto;
+      }
+
+      .stock-table th,
+      .stock-table td {
+        font-size: 12px;
+        padding: 8px;
+      }
+
+      .content {
+        padding: 15px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="email-container">
+    <!-- Header -->
+    <div class="header">
+      StockFlow Daily Summary
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+      <h2>Daily Market Summary & Potential Stock Signals</h2>
+      <p>Below is your curated summary of potential stocks showing notable
+        signals from today’s technical scans.</p>
+
+      <!-- Responsive Stock Table -->
+      <table class="stock-table" role="presentation" width="100%">
+        <thead>
+          <tr>
+            <th>Symbol</th>
+            <th>Buy Rating</th>
+            <th>Overall Sentiment</th>
+            <th>Key Drivers</th>
+            <th>Confidence</th>
+            <th>Summary</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{STOCK_ROWS}}
+        </tbody>
+      </table>
+      <br>
+      <tr>
+        <td align="left"
+            style="font-size:0px;padding:10px 25px;word-break:break-word;">
+            <div
+                style="font-family:Inter, Helvetica, Arial, sans-serif;font-size:13px;line-height:22px;text-align:left;color:#777777;">
+                <em>Data generated automatically by StockFlow’s signal engine
+                    using MACD, RSI, Bollinger Bands, and CMF indicators along with
+                    OpenAI GPT-5.</em></div>
+        </td>
+    </tr>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      © 2025 StockFlow · Automated Signal Report<br>
+      This email was generated automatically. Do not reply.
+    </div>
+  </div>
+</body>
+
+</html>

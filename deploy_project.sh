@@ -4,6 +4,13 @@ set -e
 
 export namespace="default"
 
+log_message(){
+    local time=$(date +%d-%m-%y-%T)
+    local type=$1
+    local message=$2
+    echo "[$time]----[$type]---- $message"
+}
+
 check_deployment() {
     deployment_name=$1
     INTERVAL=5
@@ -15,13 +22,13 @@ check_deployment() {
         if [[ "${deployment_status^^}" == "TRUE" ]]; then
             break
         fi
-        echo "Waiting for $deployment_name :: Elapsed - $ELAPSED"
+        log_message "INFO" "Waiting for $deployment_name :: Elapsed - $ELAPSED"
         sleep $INTERVAL
         ELAPSED=$((ELAPSED + INTERVAL))
     done
 
     if [ $ELAPSED -ge $TIMEOUT ]; then
-        echo "Microservice deployment failed. $deployment_name not in running status!"
+        log_message "ERROR" "Microservice deployment failed. $deployment_name not in running status!"
         exit 1
     fi
 }
@@ -29,10 +36,10 @@ check_deployment() {
 if [[ ! -z $1 ]]; then
     export namespace=$1
     if [[ ! -z $2 ]]; then
-    echo "Shifting to dev deployment"
+    log_message "INFO" "Shifting to dev deployment"
     fi
 fi
-echo "Namespace set to $namespace"
+log_message "INFO" "Namespace set to $namespace"
 
 if [[ namespace != "default" ]]; then
     export DEPLOY_TYPE="$namespace"
@@ -40,9 +47,9 @@ fi
 
 namespace_list=($(kubectl get namespaces -o json | jq -r .items[].metadata.name))
 if [[ "${namespace_list[*]}" =~ "$namespace "* ]] || [[ "${namespace_list[*]}" =~ *" $namespace" ]] || [[ "${namespace_list[*]}" =~ *" $namespace "* ]]; then
-    echo "$namespace already present"
+    log_message "INFO" "$namespace already present"
 else
-    echo "$namespace not present. creating namespace $namespace"
+    log_message "INFO" "$namespace not present. creating namespace $namespace"
     kubectl create namespace $namespace
 fi
 
@@ -114,7 +121,7 @@ kubectl -n "$namespace" delete serviceaccount controller-svc-acc --ignore-not-fo
 if [[ "$namespace" != "default" ]]; then
     sed "s|default|$namespace|g" kubernetes/rbac/role-binding.yaml > role-binding.yaml
     sed "s|default|$namespace|g" kubernetes/rbac/stockflow-controller-svc-acc.yaml > svc-acc.yaml
-    echo "updated service account role binding with namesapce specific value"
+    log_message "INFO" "updated service account role binding with namesapce specific value"
     kubectl -n "$namespace" apply -f role-binding.yaml
     kubectl -n "$namespace" apply -f svc-acc.yaml
 else
@@ -143,7 +150,7 @@ if [[ "$namespace" != "default" ]]; then
     sed -e "s|/api|/$namespace/api|g" \
         -e "s|namespace: default|namespace: $namespace|g" \
     kubernetes/services/stockflow-ingress.yaml > ingress.yaml
-    echo "updated ingress with namespace specific path"
+    log_message "INFO" "updated ingress with namespace specific path"
     kubectl -n "$namespace" apply -f ingress.yaml
 else
     kubectl -n "$namespace" apply -f kubernetes/services/stockflow-ingress.yaml

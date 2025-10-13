@@ -41,7 +41,7 @@ if [[ ! -z $1 ]]; then
 fi
 log_message "INFO" "Namespace set to $namespace"
 
-if [[ namespace != "default" ]]; then
+if [[ $namespace != "default" ]]; then
     export DEPLOY_TYPE="$namespace"
 fi
 

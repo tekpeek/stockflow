@@ -41,9 +41,7 @@ if [[ ! -z $1 ]]; then
 fi
 log_message "INFO" "Namespace set to $namespace"
 
-if [[ namespace != "default" ]]; then
-    export DEPLOY_TYPE="$namespace"
-fi
+export DEPLOY_TYPE="$namespace"
 
 namespace_list=($(kubectl get namespaces -o json | jq -r .items[].metadata.name))
 if [[ "${namespace_list[*]}" =~ "$namespace "* ]] || [[ "${namespace_list[*]}" =~ *" $namespace" ]] || [[ "${namespace_list[*]}" =~ *" $namespace "* ]]; then

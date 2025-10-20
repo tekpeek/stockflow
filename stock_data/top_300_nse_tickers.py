@@ -1,1 +1,0 @@
-top_300_nse_tickers=['IDEA', 'RPOWER', 'SUZLON', 'YESBANK', 'SCI', 'JPPOWER', 'HFCL', 'IDFCFIRSTB', 'IREDA', 'ONGC']

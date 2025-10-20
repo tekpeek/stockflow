@@ -1,4 +1,7 @@
-top_500_nse_tickers = [
+# Top 500 NSE Stocks by Volume
+# Generated automatically from EQUITY_L.csv using yfinance
+
+TOP_500_STOCKS_BY_VOLUME = [
     "IDEA.NS",
     "SOUTHBANK.NS",
     "YESBANK.NS",
@@ -500,3 +503,8 @@ top_500_nse_tickers = [
     "RUSHIL.NS",
     "SHREDIGCEM.NS"
 ]
+
+# Usage example:
+# from top_500_stocks_list import TOP_500_STOCKS_BY_VOLUME
+# print(f"Total stocks: {len(TOP_500_STOCKS_BY_VOLUME)}")
+# print(f"First 10 stocks: {TOP_500_STOCKS_BY_VOLUME[:10]}")

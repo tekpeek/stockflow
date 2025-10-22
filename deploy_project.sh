@@ -97,7 +97,7 @@ fi
 # Delete and recreate configmap for cronjob
 kubectl -n "$namespace" delete configmap cronjob-config --ignore-not-found
 kubectl -n "$namespace" create configmap cronjob-config \
- --from-file=src/core/top_500_nse_tickers.py \
+ --from-file=update_tickers/EQUITY_L.csv \
  --from-file=src/core/cronjob-execution.py \
  --from-file=src/core/healthcheck-execution.py \
  --from-file=src/core/smtp_email_trigger.py \

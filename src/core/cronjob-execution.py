@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 def save_list_to_file(stock_list: List[str], filename: str) -> None:
     try:
         with open(filename, 'w') as f:
-            f.write("TOP_500_STOCKS_BY_VOLUME = [\n")
+            f.write("top_500_nse_tickers = [\n")
             
             # Write each stock ticker with proper formatting
             for i, stock in enumerate(stock_list):

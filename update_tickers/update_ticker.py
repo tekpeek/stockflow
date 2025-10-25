@@ -10,17 +10,8 @@ logger = logging.getLogger(__name__)
 
 
 def save_list_to_file(stock_list: List[str], filename: str) -> None:
-    """
-    Save a list of stock tickers to a Python file as a variable.
-    
-    Args:
-        stock_list (List[str]): List of stock tickers to save
-        filename (str): Name of the file to save to
-    """
     try:
         with open(filename, 'w') as f:
-            f.write("# Top 500 NSE Stocks by Volume\n")
-            f.write("# Generated automatically from EQUITY_L.csv using yfinance\n\n")
             f.write("TOP_500_STOCKS_BY_VOLUME = [\n")
             
             # Write each stock ticker with proper formatting
@@ -29,12 +20,7 @@ def save_list_to_file(stock_list: List[str], filename: str) -> None:
                     f.write(f'    "{stock}"\n')
                 else:
                     f.write(f'    "{stock}",\n')
-            
             f.write("]\n\n")
-            f.write("# Usage example:\n")
-            f.write("# from top_500_stocks_list import TOP_500_STOCKS_BY_VOLUME\n")
-            f.write("# print(f\"Total stocks: {len(TOP_500_STOCKS_BY_VOLUME)}\")\n")
-            f.write("# print(f\"First 10 stocks: {TOP_500_STOCKS_BY_VOLUME[:10]}\")\n")
         
         logger.info(f"Successfully saved {len(stock_list)} stocks to {filename}")
         
@@ -43,16 +29,6 @@ def save_list_to_file(stock_list: List[str], filename: str) -> None:
 
 
 def get_top_500_stocks_by_volume(csv_file_path: str = "EQUITY_L.csv") -> List[str]:
-    """
-    Read stock symbols from CSV file, fetch volume data using yfinance,
-    and return top 500 stocks sorted by volume in descending order.
-    
-    Args:
-        csv_file_path (str): Path to the CSV file containing stock symbols
-        
-    Returns:
-        List[str]: List of top 500 stock tickers with .ns suffix, sorted by volume
-    """
     try:
         # Read the CSV file
         logger.info(f"Reading stock symbols from {csv_file_path}")
@@ -104,7 +80,7 @@ def get_top_500_stocks_by_volume(csv_file_path: str = "EQUITY_L.csv") -> List[st
         logger.info(f"Returning top {len(top_500_stocks)} stocks by volume")
         
         # Save the list to a new Python file
-        save_list_to_file(top_500_stocks, "top_500_stocks_list.py")
+        save_list_to_file(top_500_stocks, "top_500_nse_tickers.py")
         
         return top_500_stocks
         
@@ -114,16 +90,6 @@ def get_top_500_stocks_by_volume(csv_file_path: str = "EQUITY_L.csv") -> List[st
 
 
 def get_top_500_stocks_by_volume_with_volume_data(csv_file_path: str = "EQUITY_L.csv") -> List[Tuple[str, float]]:
-    """
-    Read stock symbols from CSV file, fetch volume data using yfinance,
-    and return top 500 stocks with their volume data sorted by volume in descending order.
-    
-    Args:
-        csv_file_path (str): Path to the CSV file containing stock symbols
-        
-    Returns:
-        List[Tuple[str, float]]: List of tuples containing (ticker, volume) for top 500 stocks
-    """
     try:
         # Read the CSV file
         logger.info(f"Reading stock symbols from {csv_file_path}")

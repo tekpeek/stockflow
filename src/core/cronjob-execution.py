@@ -54,8 +54,6 @@ def get_top_500_stocks_by_volume(csv_file_path: str = "/home/ubuntu/app/EQUITY_L
                 # Add small delay to avoid rate limiting
                 if i % 10 == 0 and i > 0:
                     time.sleep(1)
-                if i>499:
-                    break
                 # Fetch stock data
                 ticker = yf.Ticker(symbol)
                 hist = ticker.history(period="1d")

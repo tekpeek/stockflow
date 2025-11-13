@@ -43,7 +43,7 @@ def send_email(stock_list,error_list):
     smtp_user = "noreply.avinash.s@gmail.com"
     smtp_password = os.getenv("SMTP_PASSWORD")
     smtp_port = os.getenv("SMTP_PORT")
-    reciever = "kingaiva@icloud.com"
+    reciever = "avinashsubhash19@outlook.com"
     msg = MIMEMultipart("alternative")
     msg['Subject'] = subject
     msg['From'] = formataddr(("Market Monitor", sender_addr))

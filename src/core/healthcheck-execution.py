@@ -5,6 +5,8 @@ from email.message import EmailMessage
 from email.utils import formataddr
 from datetime import datetime
 import time
+import requests
+import json
 
 def check_service_health(url, retries=3, timeout=20):
     for attempt in range(retries):
@@ -36,10 +38,32 @@ def health_check():
 
     return [is_healthy, issues]
 
+def trigger_failure_api(issues):
+    url = "https://tekpeek.duckdns.org/api/kubesnap/default"
+    api_key = os.getenv("API_KEY")
+    if not api_key:
+        print("API_KEY environment variable not set. Skipping API call.")
+        return
+
+    headers = {
+        "X-API-Key": api_key
+    }
+    
+    try:
+        print(f"Triggering API for issues: {issues}")
+        response = requests.get(url, headers=headers, timeout=10)
+        
+        if response.status_code == 200:
+            print("Successfully triggered failure API")
+            print(f"Failed to trigger failure API. Status: {response.status_code}, Response: {response.text}")
+    except Exception as e:
+        print(f"Error triggering failure API: {e}")
+
 if __name__ == "__main__":
     health_status = health_check()
     print(f"health_status: {health_status}")
     if not health_status[0]:
+            trigger_failure_api(health_status[1])
             current_datetime = datetime.now().strftime("%B %d %Y - %I:%M %p")
             subject = f"Stockflow Alert: Health Check Failed - {current_datetime}"
             sender_addr = "noreply.avinash.s@gmail.com"

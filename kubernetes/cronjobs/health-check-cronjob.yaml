@@ -28,6 +28,11 @@ spec:
                   secretKeyRef:
                     name: smtp-credentials
                     key: smtp-password
+              - name: API_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: api-credentials
+                    key: api-key
             command: ["/bin/bash", "-c", "python3 /home/ubuntu/app/healthcheck-execution.py"]
             volumeMounts:
               - name: cronjob-config-volume

@@ -25,17 +25,71 @@ Deploy Workflow
 ![Deploy](https://github.com/AvinashSubhash/stockflow/actions/workflows/deploy-stockflow.yml/badge.svg)
 
 
+## Getting Started
+
+### Prerequisites
+- **Kubernetes Cluster** (K3s recommended)
+- **Docker**
+- **Python 3.9+**
+- **kubectl** configured for your cluster
+
+### Installation
+
+1. **Clone the Repository**
+   ```bash
+   git clone https://github.com/AvinashSubhash/stockflow.git
+   cd stockflow
+   ```
+
+2. **Configure Environment Variables**
+   You need to set up the following environment variables.
+   
+   **Required Environment Variables:**
+   - `OPENAI_API_KEY`: For Market Intel Engine
+   - `SF_API_KEY`: Set a Unique Key for Admin API Authentication
+   - `SMTP_PASSWORD`: For email notifications
+
+3. **Deploy to Kubernetes**
+   Use the deployment script to deploy to the `default` namespace:
+   ```bash
+   chmod +x deploy_project.sh
+   ./deploy_project.sh default
+   ```
+   *To deploy to a custom namespace (e.g., dev):*
+   ```bash
+   ./deploy_project.sh dev
+   ```
+
+### Configuration
+The system uses Kubernetes ConfigMaps and Secrets for configuration.
+
+**Strategy Configuration (`strategy-config` Secret):**
+- `interval`: Candle interval (default: "1d")
+- `period`: Lookback period (default: 14)
+- `window`: Bollinger Band window (default: 20)
+- `num_std`: Standard Deviations (default: 2)
+
+**Maintenance Mode:**
+Controlled via the `maintenance-config` ConfigMap. Use the Admin API to toggle.
+
 ## Features
 
 ### **Signal Engine**
 - **Multi-Indicator Analysis**: Identifying potential entry points by combining signals from RSI, MACD, Bollinger Bands, CMF (Chaikin Money Flow)
 - **Real-time Data**: Live stock data from Yahoo Finance
+- **Dynamic Stock Universe**: Automatically updates and scans the top 500 NSE stocks by trading volume
 - **Confidence Scoring**: Signal strength assessment (Weak/Strong)
+- **Externalized Strategy**: Configurable strategy parameters (Interval, Period, Window, StdDev) via Kubernetes Secrets
 - **Health check API**: Health check API to detect status of microservice
 
 ### **StockFlow Controller**
 - **Manual Job Trigger through API**: Administrative API endpoint for triggering manual job from conjob using API call
+- **Maintenance Mode**: Administrative control to enable/disable system maintenance mode, pausing API responses during updates
 - **Health check API**: Health check API to detect status of microservice
+
+### **Market Intel Engine**
+- **AI-Powered Analysis**: Performs sentiment analysis on stock tickers using OpenAI (GPT-5)
+- **Signal Validation**: Validates technical buy signals with AI-driven sentiment scores; only stocks with high ratings are alerted
 
 ### **Technical Indicators**
 - **RSI (Relative Strength Index)**: Momentum oscillator with smoothing
@@ -51,12 +105,14 @@ Deploy Workflow
 - **Authentication for selected APIs**: API Key Authentication for administrative and sensitive endpoints 
 
 ### **Automation & Monitoring**
-- **Scheduled Analysis**: Automated cronjobs for regular stock screening
-- **Email Notifications**: Email alert with potential stocks during scheduled analysis
+- **Scheduled Analysis**: Automated cronjobs for regular stock screening with AI validation
+- **Email Notifications**: Rich HTML email alerts containing technical signals and detailed AI sentiment analysis
 - **Health Monitoring**: Automated system health check and status monitoring with email alert on failure
+- **Kubesnap Integration**: Automated snapshot triggering and failure reporting to ![Kubesnap](https://github.com/tekpeek/kubesnap) API on health check failures
 
 ### **Deployment & Infrastructure**
 - **Lightweight Kubernetes**: Full K3s deployment with Role based access control
+- **Multi-Environment Support**: Deploy to custom namespaces (e.g., dev, staging) with automated ingress path rewriting
 - **Docker Containerization**: Microservice architecture
 - **Traefik Ingress**: Provides routing with TLS encryption using Traefik, and configures CORS to allow cross-service API calls securely.
 - **ConfigMaps & Secrets**: Secure configuration management with kubernetes secrets and configmaps

@@ -65,6 +65,33 @@ Some endpoints require an API key. Pass your API key in the `X-API-KEY` header.
 
 ---
 
+## Market Intel Engine Endpoints
+
+### 1. Health Check
+- **Method:** GET
+- **Endpoint:** `/health` (on Market Intel Service port 8000)
+- **Description:** Returns the health status of the Market Intel service.
+
+### 2. Chat / Analysis
+- **Method:** POST
+- **Endpoint:** `/chat`
+- **Description:** Submits a prompt to the AI engine for sentiment analysis.
+- **Request Body:**
+```json
+{
+  "prompt": "Analyze the sentiment for RELIANCE.NS..."
+}
+```
+- **Response Example:**
+```json
+{
+  "result": "{...JSON analysis...}",
+  "timestamp": "2024-06-01T12:00:00Z"
+}
+```
+
+---
+
 ## Controller Endpoints
 
 ### 1. Health Check (Admin)
@@ -118,6 +145,36 @@ Some endpoints require an API key. Pass your API key in the `X-API-KEY` header.
 {
   "status": "error",
   "detail": "signal-check-cronjob not found in the cluster"
+}
+```
+
+---
+
+### 4. Maintenance Mode Status
+- **Method:** GET
+- **Endpoint:** `/api/admin/maintenance/status`
+- **Description:** Checks if the system is currently in maintenance mode.
+- **Response Example:**
+```json
+{
+  "status": "off",
+  "timestamp": "2024-06-01T12:00:00Z"
+}
+```
+
+### 5. Toggle Maintenance Mode
+- **Method:** GET
+- **Endpoint:** `/api/admin/maintenance/{status}`
+- **Description:** Enables (`on`) or disables (`off`) maintenance mode. Requires API key.
+- **Path Parameters:**
+  - `status`: "on" or "off"
+- **Headers:**
+  - `X-API-Key`: your-api-key
+- **Response Example:**
+```json
+{
+  "status": "on",
+  "timestamp": "2024-06-01T12:00:00Z"
 }
 ```
 

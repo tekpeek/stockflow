@@ -59,39 +59,38 @@ def trigger_failure_api(issues):
     except Exception as e:
         print(f"Error triggering failure API: {e}")
 
+def send_email(issues,retries=3,timeout=20):
+    url = "http://event-dispatcher-service:8000/api/v1/health-alert"
+    headers = {"Content-Type": "application/json"}
+    payload = {"issues": issues}
+
+    for attempt in range(retries):
+        try:
+            response = requests.post(url, json=payload, headers=headers, timeout=timeout)
+            print(f"Response for {url}: {response.text} : attempt: {attempt}")
+            print("*****************")
+            
+            if response.status_code == 200:
+                try:
+                    response_json = response.json()
+                    status = response_json.get("status")
+                    if status == "Health alert email sent":
+                        return True
+                except ValueError:
+                    print("Invalid JSON response")
+            
+        except requests.exceptions.RequestException as e:
+            print(f"Request failed: {e}")
+
+        time.sleep(1)  # Wait 1 second before retrying
+    return False
+
 if __name__ == "__main__":
     health_status = health_check()
     print(f"health_status: {health_status}")
     if not health_status[0]:
             trigger_failure_api(health_status[1])
             current_datetime = datetime.now().strftime("%B %d %Y - %I:%M %p")
-            subject = f"Stockflow Alert: Health Check Failed - {current_datetime}"
-            sender_addr = "noreply.avinash.s@gmail.com"
-            smtp_host = os.getenv("SMTP_HOST")
-            body = f"""
-Hello,
-
-Stockflow has identified failed health check during routine checks.
-
-Errored Services: {health_status[1]}
-
-Thank you,
-Stockflow
-
----
-
-This is an automated message. Please do not reply.
-            """
-            smtp_user = "noreply.avinash.s@gmail.com"
-            smtp_password = os.getenv("SMTP_PASSWORD")
-            smtp_port = os.getenv("SMTP_PORT")
-            reciever = "kingaiva@icloud.com"
-            msg = EmailMessage()
-            msg['Subject'] = subject
-            msg['From'] = formataddr(("Stockflow Health Check", sender_addr))
-            msg['To'] = reciever
-            msg.set_content(body)
-            server = smtplib.SMTP(smtp_host,smtp_port)    
-            server.starttls()
-            server.login(smtp_user,smtp_password)
-            server.send_message(msg)
+            status = send_email(health_status[1])
+            if not status:
+                print(f"Failed to send email for issues: {health_status[1]}")

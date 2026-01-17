@@ -5,11 +5,17 @@ import requests
 import pandas as pd
 import yfinance as yf
 import time
+import sys
 from typing import List, Tuple
 import logging
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    stream=sys.stdout,
+    force=True
+)
 logger = logging.getLogger(__name__)
 
 def save_list_to_file(stock_list: List[str], filename: str) -> None:

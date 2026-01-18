@@ -75,6 +75,7 @@ async def get_maintenance_status():
     time_stamp = datetime.datetime.now(datetime.UTC)
     configmap = v1_core.read_namespaced_config_map(name="maintenance-config",namespace="default")
     existing_status = configmap.data['status']
+    logger.info(f"Maintenance status: {existing_status}")
     return JSONResponse({
         "status": existing_status,
         "timestamp": f"{time_stamp}"
@@ -96,11 +97,11 @@ async def enable_maintenance(status: str, dep=Depends(api_key_auth)) -> Dict[str
     
     configmap = v1_core.read_namespaced_config_map(name="maintenance-config",namespace="default")
     existing_status = configmap.data['status']
-    print("Status : ",existing_status)
+    logger.info(f"Status : {existing_status}")
     if existing_status != status:
         configmap.data['status'] = status
         response = v1_core.patch_namespaced_config_map(name="maintenance-config",namespace="default",body=configmap)
-        print("Response : ",response)
+        logger.info(f"Response : {response}")
         # Perform a rollout restart by updating an annotation
         deployment = v1_core_apps.read_namespaced_deployment(name="signal-engine", namespace="default")
         if not deployment.spec.template.metadata.annotations:
@@ -108,7 +109,7 @@ async def enable_maintenance(status: str, dep=Depends(api_key_auth)) -> Dict[str
         import time as _time
         deployment.spec.template.metadata.annotations["kubectl.kubernetes.io/restartedAt"] = datetime.datetime.utcnow().isoformat()
         response = v1_core_apps.patch_namespaced_deployment(name="signal-engine", namespace="default", body=deployment)
-        print("Rollout restart response : ", response)
+        logger.info(f"Rollout restart response : {response}")
         return JSONResponse({
                 "status": f"{status}",
                 "timestamp": f"{time_stamp}"
@@ -122,6 +123,7 @@ async def enable_maintenance(status: str, dep=Depends(api_key_auth)) -> Dict[str
 @router.get("/api/admin/trigger-cron")
 async def trigger_cronjob(dep=Depends(api_key_auth)) -> Dict[str, Any]:
     if not check_cronjob_exists():
+        logger.error("Cronjob not found in the cluster")
         return JSONResponse(
             status_code=404,
             content={"status": "error", "detail": "signal-check-cronjob not found in the cluster"}

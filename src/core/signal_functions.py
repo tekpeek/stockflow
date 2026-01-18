@@ -1,38 +1,49 @@
 import yfinance as yf
 import pandas as pd
 
-def calculate_final_signal(stock_id: str,interval: str,period: int,window: int, num_std: float):
+def calculate_final_signal(logging,stock_id: str,interval: str,period: int,window: int, num_std: float):
     nse_symbol = stock_id.upper()
-    df = yf.download(nse_symbol, period="1y", interval=interval, progress=False, auto_adjust=False) 
+    df = yf.download(nse_symbol, period="1y", interval=interval, progress=False, auto_adjust=False)
+    logging.info(f"Fetched data for {nse_symbol}")
     rsi = calculate_rsi(stock_id,df,period,interval)
+    logging.info(f"Calculated RSI for {nse_symbol}")
     macd = calculate_macd_signal(stock_id,df,interval)
+    logging.info(f"Calculated MACD for {nse_symbol}")
     bb = calculate_bollinger_bands(stock_id,df,window,num_std)
+    logging.info(f"Calculated Bollinger Bands for {nse_symbol}")
     cmf = calculate_cmf(stock_id,df,period,interval,window)
-    return signal_aggregator_v3(rsi, macd, bb, cmf)
+    logging.info(f"Calculated CMF for {nse_symbol}")
+    return signal_aggregator_v3(logging,rsi, macd, bb, cmf)
     #return signal_aggregator_v2(rsi, macd, bb, cmf)
     #return should_buy(rsi, macd, bb, cmf)
 
-def calculate_individual(option: str, stock_id: str,interval: str,period: int,window: int, num_std: float):
+def calculate_individual(logging,option: str, stock_id: str,interval: str,period: int,window: int, num_std: float):
     nse_symbol = stock_id.upper()
     df = yf.download(nse_symbol, period="1y", interval=interval, progress=False, auto_adjust=False)
+    logging.info(f"Fetched data for {nse_symbol}")
     if option=="rsi":
+        logging.info(f"Calculated RSI for {nse_symbol}")
         return  calculate_rsi(stock_id,df,period,interval)
     elif option=="bb":
+        logging.info(f"Calculated Bollinger Bands for {nse_symbol}")
         return calculate_bollinger_bands(stock_id,df,window,num_std)
     elif option=="macd":
+        logging.info(f"Calculated MACD for {nse_symbol}")
         return calculate_macd_signal(stock_id,df,interval)
     elif option=="cmf":
+        logging.info(f"Calculated CMF for {nse_symbol}")
         return calculate_cmf(stock_id,df,period,interval,window)
     else:
+        logging.info(f"Invalid Strategy option: {option}")
         return {"error": "Invalid Strategy option!"}
-def signal_aggregator_v3(rsi_result, macd_result, bb_result,cmf_result):
+def signal_aggregator_v3(logging,rsi_result, macd_result, bb_result,cmf_result):
     reasons = []
     buy_signal = False
     buy_signal_list = []
     signal_strength = "Weak"
     signal_count = 0
     positive_rsi = False
-
+    logging.info("Initiating signal_aggregator_v3.")
     positive_cmf = float(cmf_result['latest_cmf']) >= 0
 
     bb_one =  (bb_result['price'] - bb_result['lower_band']) / bb_result['lower_band'] <= 0.014
@@ -61,7 +72,7 @@ def signal_aggregator_v3(rsi_result, macd_result, bb_result,cmf_result):
         signal_strength = "Strong"
     if signal_count >= 2:
         buy_signal = True
-    
+    logging.info("Completed signal_aggregator_v3.")
     return {
         'buy': buy_signal,
         'reason': "; ".join(reasons),

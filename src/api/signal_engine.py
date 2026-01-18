@@ -58,6 +58,7 @@ def health_check():
     if MAINTENANCE_STATUS == "on":
         return JSONResponse({"status": "Maintenance mode is enabled"})
     time_stamp = datetime.datetime.now(datetime.UTC)
+    logging.info(f"Reached /api/health at {time_stamp}.")
     return JSONResponse({
             "status": "OK",
             "timestamp": f"{time_stamp}"
@@ -72,12 +73,13 @@ def get_stock_data(
     num_std: float = DEFAULT_NUM_STD
 ):
     if MAINTENANCE_STATUS == "on":
+        logging.info("Maintenance mode is enabled.")
         return JSONResponse({"status": "Maintenance mode is enabled"})
-    logging.info("Triggering signal-engine for "+stock_id)
+    logging.info(f"Triggering signal-engine for {stock_id}")
     logging.info(f"Strategy Values: interval: {interval}, period: {period}, window: {window}, num_std: {num_std}")
     if stock_id.endswith(".NS"):
         try:
-            return_data = sf.calculate_final_signal(stock_id,interval,period,window,num_std)
+            return_data = sf.calculate_final_signal(logging,stock_id,interval,period,window,num_std)
             if return_data is None:
                 logger.error("Return data is None")
                 return JSONResponse({"error": "No data returned from signal calculation"})
@@ -99,14 +101,14 @@ def get_stock_data(
     num_std: float = DEFAULT_NUM_STD
 ):
     if MAINTENANCE_STATUS == "on":
+        logging.info("Maintenance mode is enabled.")
         return JSONResponse({"status": "Maintenance mode is enabled"})
     logging.info("Triggering signal-engine for "+stock_id)
     logging.info(f"Strategy Values: interval: {interval}, period: {period}, window: {window}, num_std: {num_std}")
     if stock_id.endswith(".NS"):
         try:
-            return_data = sf.calculate_individual(option,stock_id,interval,period,window,num_std)
+            return_data = sf.calculate_individual(logging,option,stock_id,interval,period,window,num_std)
             return_data = convert_bools_to_strings(return_data)
-            print(return_data)
             if return_data is None:
                 logger.error("Return data is None")
                 return JSONResponse({"error": "No data returned from signal calculation"})

@@ -16,7 +16,16 @@ logging.basicConfig(
     stream=sys.stdout,
     force=True
 )
+
 logger = logging.getLogger(__name__)
+
+try:
+    STOCKFLOW_CONTROLLER_URL = os.getenv("STOCKFLOW_CONTROLLER")
+    SIGNAL_ENGINE_URL = os.getenv("SIGNAL_ENGINE")
+    MARKET_INTEL_ENGINE_URL = os.getenv("MARKET_INTEL_ENGINE")
+except Exception as e:
+    logger.error(f"Error loading environment variables: {str(e)}")
+
 
 def save_list_to_file(stock_list: List[str], filename: str) -> None:
     try:
@@ -182,7 +191,7 @@ def identify_stocks():
     error_list = []
     ticker_list= []
     for ticker in top_500_nse_tickers.top_500_nse_tickers:
-        output=os.popen(f"curl -s http://signal-engine-service:8000/api/{ticker} | jq -r .").read().strip()
+        output=os.popen(f"curl -s {SIGNAL_ENGINE_URL}/api/{ticker} | jq -r .").read().strip()
         signals = os.popen(f"echo '{output}' | jq -r .signals").read().strip()
         strength = os.popen(f"echo '{output}' | jq -r .strength").read().strip()
         reasons = os.popen(f"echo '{output}' | jq -r .reason").read().strip()
@@ -202,7 +211,7 @@ def perform_market_sentiment_analysis(ticker_list):
         prompt = file.read()
         prompt = prompt.replace("__TICKER_LIST__",str(ticker_list))
     file.close()
-    mie_analysis = fetch_openai_analysis("http://market-intel-engine-service:8000/chat",prompt)
+    mie_analysis = fetch_openai_analysis(f"{MARKET_INTEL_ENGINE_URL}/chat",prompt)
     final_list=[]
     for i in range(len(mie_analysis["mie_analysis"]["results"])):
         if mie_analysis["mie_analysis"]["results"][i]["buy_rating"] >=5:

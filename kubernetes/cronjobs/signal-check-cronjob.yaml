@@ -12,6 +12,21 @@ spec:
           - name: signal-check
             image: kingaiva/signal-engine:dev
             env:
+              - name: STOCKFLOW_CONTROLLER
+                valueFrom:
+                  configMapKeyRef:
+                    name: service-urls  
+                    key: STOCKFLOW_CONTROLLER
+              - name: SIGNAL_ENGINE
+                valueFrom:
+                  configMapKeyRef:
+                    name: service-urls
+                    key: SIGNAL_ENGINE
+              - name: MARKET_INTEL_ENGINE
+                valueFrom:
+                  configMapKeyRef:
+                    name: service-urls
+                    key: MARKET_INTEL_ENGINE
               - name: SMTP_HOST
                 valueFrom:
                   secretKeyRef:

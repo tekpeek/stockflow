@@ -191,7 +191,13 @@ check_deployment "market-intel-engine"
 
 # Delete and recreate health check cronjob
 kubectl -n "$namespace" delete cronjob health-check-cronjob --ignore-not-found
-kubectl -n "$namespace" apply -f kubernetes/cronjobs/health-check-cronjob.yaml
+sed -e "s|__DEPLOY_TYPE__|${DEPLOY_TYPE}|g" \
+    kubernetes/cronjobs/health-check-cronjob.yaml > health-check-cronjob.yaml
+kubectl -n "$namespace" apply -f health-check-cronjob.yaml
 
 # create a manual cronjob and check functioning
 kubectl -n "$namespace" create job health-check-manual --from=cronjob/health-check-cronjob
+
+# Deleting junk yaml files
+rm *.yaml
+log_message "INFO" "Deleted junk yaml files"

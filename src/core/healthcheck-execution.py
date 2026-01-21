@@ -19,6 +19,17 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+try:
+    STOCKFLOW_CONTROLLER_URL = os.getenv("STOCKFLOW_CONTROLLER")
+    SIGNAL_ENGINE_URL = os.getenv("SIGNAL_ENGINE")
+    MARKET_INTEL_ENGINE_URL = os.getenv("MARKET_INTEL_ENGINE")
+    EVENT_DISPATCHER_URL = os.getenv("EVENT_DISPATCHER")
+    KUBESNAP_URL = os.getenv("KUBESNAP")
+    DEPLOY_TYPE = os.getenv("DEPLOY_TYPE")
+    API_KEY = os.getenv("API_KEY")
+except Exception as e:
+    logger.error(f"Error loading environment variables: {str(e)}")
+
 def check_service_health(url, retries=3, timeout=20):
     for attempt in range(retries):
         output = os.popen(f"curl -s --max-time {timeout} {url} | jq -r .").read().strip()
@@ -34,9 +45,9 @@ def check_service_health(url, retries=3, timeout=20):
 def health_check():
     issues = []
     is_healthy = True
-    se_healthy = check_service_health("https://tekpeek.duckdns.org/api/health")
-    sc_healthy = check_service_health("https://tekpeek.duckdns.org/api/admin/health")
-    mie_healthy = check_service_health("http://market-intel-engine-service:8000/health")
+    se_healthy = check_service_health(f"{SIGNAL_ENGINE_URL}/api/health")
+    sc_healthy = check_service_health(f"{STOCKFLOW_CONTROLLER_URL}/api/admin/health")
+    mie_healthy = check_service_health(f"{MARKET_INTEL_ENGINE_URL}/health")
 
     if not se_healthy:
         is_healthy = False
@@ -51,14 +62,13 @@ def health_check():
     return [is_healthy, issues]
 
 def trigger_failure_api(issues):
-    url = "https://tekpeek.duckdns.org/api/kubesnap/default"
-    api_key = os.getenv("API_KEY")
-    if not api_key:
+    url = f"{KUBESNAP_URL}/api/kubesnap/{DEPLOY_TYPE}"
+    if not API_KEY:
         logger.error("API_KEY environment variable not set. Skipping API call.")
         return
 
     headers = {
-        "X-API-Key": api_key
+        "X-API-Key": API_KEY
     }
     
     try:
@@ -72,7 +82,7 @@ def trigger_failure_api(issues):
         logger.error(f"Error triggering failure API: {e}")
 
 def send_email(issues,retries=3,timeout=20):
-    url = "http://event-dispatcher-service:8000/api/v1/health-alert"
+    url = f"{EVENT_DISPATCHER_URL}/api/v1/health-alert"
     headers = {"Content-Type": "application/json"}
     payload = {"issues": issues}
 

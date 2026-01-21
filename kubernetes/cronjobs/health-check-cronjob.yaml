@@ -33,6 +33,33 @@ spec:
                   secretKeyRef:
                     name: api-credentials
                     key: api-key
+              - name: DEPLOY_TYPE
+                value: "__DEPLOY_TYPE__"
+              - name: SIGNAL_ENGINE
+                valueFrom: 
+                  configMapKeyRef:
+                    name: service-urls
+                    key: SIGNAL_ENGINE
+              - name: MARKET_INTEL_ENGINE
+                valueFrom: 
+                  configMapKeyRef:
+                    name: service-urls
+                    key: MARKET_INTEL_ENGINE
+              - name: EVENT_DISPATCHER
+                valueFrom: 
+                  configMapKeyRef:
+                    name: service-urls
+                    key: EVENT_DISPATCHER
+              - name: KUBESNAP
+                valueFrom: 
+                  configMapKeyRef:
+                    name: service-urls
+                    key: KUBESNAP
+              - name: STOCKFLOW_CONTROLLER
+                valueFrom: 
+                  configMapKeyRef:
+                    name: service-urls
+                    key: STOCKFLOW_CONTROLLER
             command: ["/bin/bash", "-c", "python3 /home/ubuntu/app/healthcheck-execution.py"]
             volumeMounts:
               - name: cronjob-config-volume

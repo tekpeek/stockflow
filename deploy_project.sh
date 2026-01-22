@@ -3,6 +3,7 @@
 set -e
 
 export namespace="default"
+source ./src/env/services.env
 
 log_message(){
     local time=$(date +%d-%m-%y-%T)
@@ -39,15 +40,30 @@ if [[ ! -z $1 ]]; then
     log_message "INFO" "Shifting to dev deployment"
     fi
 fi
-log_message "INFO" "Namespace set to $namespace"
+
+# If namespace is not default, then add "/$namespace" at the end of variables 
+# STOCKFLOW_CONTROLLER,SIGNAL_ENGINE,MARKET_INTEL_ENGINE,EVENT_DISPATCHER
+if [[ "$namespace" != "default" ]]; then
+    STOCKFLOW_CONTROLLER="$STOCKFLOW_CONTROLLER/$namespace"
+    SIGNAL_ENGINE="$SIGNAL_ENGINE/$namespace"
+    EVENT_DISPATCHER="$EVENT_DISPATCHER/$namespace"
+fi
+
+log_message "INFO" "Loaded Variables"
+log_message "INFO" "STOCKFLOW_CONTROLLER: $STOCKFLOW_CONTROLLER"
+log_message "INFO" "SIGNAL_ENGINE: $SIGNAL_ENGINE"
+log_message "INFO" "MARKET_INTEL_ENGINE: $MARKET_INTEL_ENGINE"
+log_message "INFO" "KUBESNAP: $KUBESNAP"
+log_message "INFO" "EVENT_DISPATCHER: $EVENT_DISPATCHER"
+log_message "INFO" "Namespace: $namespace"
 
 export DEPLOY_TYPE="$namespace"
 
 namespace_list=($(kubectl get namespaces -o json | jq -r .items[].metadata.name))
 if [[ "${namespace_list[*]}" =~ "$namespace "* ]] || [[ "${namespace_list[*]}" =~ *" $namespace" ]] || [[ "${namespace_list[*]}" =~ *" $namespace "* ]]; then
-    log_message "INFO" "$namespace already present"
+    log_message "INFO" "Namespace: $namespace already present"
 else
-    log_message "INFO" "$namespace not present. creating namespace $namespace"
+    log_message "INFO" "Namespace: $namespace not present. creating namespace $namespace"
     kubectl create namespace $namespace
 fi
 
@@ -93,6 +109,15 @@ if [[ ! -z "${SF_API_KEY}" ]]; then
         --from-literal=api-key="${SF_API_KEY}" \
         --from-literal=OPENAI_API_KEY="${OPENAI_API_KEY}"
 fi
+
+# Delete and recreate service-urls configmap
+kubectl -n "$namespace" delete configmap service-urls --ignore-not-found
+kubectl -n "$namespace" create configmap service-urls \
+    --from-literal=STOCKFLOW_CONTROLLER="${STOCKFLOW_CONTROLLER}" \
+    --from-literal=SIGNAL_ENGINE="${SIGNAL_ENGINE}" \
+    --from-literal=MARKET_INTEL_ENGINE="${MARKET_INTEL_ENGINE}" \
+    --from-literal=EVENT_DISPATCHER="${EVENT_DISPATCHER}" \
+    --from-literal=KUBESNAP="${KUBESNAP}"
 
 # Delete and recreate configmap for cronjob
 kubectl -n "$namespace" delete configmap cronjob-config --ignore-not-found
@@ -166,7 +191,13 @@ check_deployment "market-intel-engine"
 
 # Delete and recreate health check cronjob
 kubectl -n "$namespace" delete cronjob health-check-cronjob --ignore-not-found
-kubectl -n "$namespace" apply -f kubernetes/cronjobs/health-check-cronjob.yaml
+sed -e "s|__DEPLOY_TYPE__|${DEPLOY_TYPE}|g" \
+    kubernetes/cronjobs/health-check-cronjob.yaml > health-check-cronjob.yaml
+kubectl -n "$namespace" apply -f health-check-cronjob.yaml
 
 # create a manual cronjob and check functioning
 kubectl -n "$namespace" create job health-check-manual --from=cronjob/health-check-cronjob
+
+# Deleting junk yaml files
+rm *.yaml
+log_message "INFO" "Deleted junk yaml files"

@@ -1,56 +1,27 @@
-import sys
-import os
-import smtplib
-from email.message import EmailMessage
-from email.utils import formataddr
-from datetime import datetime
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
+import requests
+import time
 
-def prepare_template(stock_list=None):
-    with open("/home/ubuntu/app/email-template.html") as f:
-        html = f.read()
-    
-    if stock_list:
-        # Generate table rows from stock_list
-        rows_html = ""
-        for stock in stock_list:
-            symbol, buy_rating, overall_sentiment, key_drivers, confidence, summary = stock["symbol"], stock["buy_rating"], stock["overall_sentiment"], str(stock["key_drivers"]), stock["confidence"], stock["summary"] 
+def send_email(logger,stock_list,retries=3,timeout=20):
+    url = f"{EVENT_DISPATCHER_URL}/api/v1/email-alert"
+    headers = {"Content-Type": "application/json"}
+    payload = {"stock_list": stock_list}
+
+    for attempt in range(retries):
+        try:
+            response = requests.post(url, json=payload, headers=headers, timeout=timeout)
+            logger.info(f"Response for {url}: {response.text} : attempt: {attempt}")
             
-            rows_html += f"""
-            <tr>
-                <td style="padding:10px; border-bottom:1px solid #eaeaea;">{symbol}</td>
-                <td style="padding:10px; border-bottom:1px solid #eaeaea;">{buy_rating}</td>
-                <td style="padding:10px; border-bottom:1px solid #eaeaea;">{overall_sentiment}</td>
-                <td style="padding:10px; border-bottom:1px solid #eaeaea;">{key_drivers}</td>
-                <td style="padding:10px; border-bottom:1px solid #eaeaea;">{confidence}</td>
-                <td style="padding:10px; border-bottom:1px solid #eaeaea;">{summary}</td>
-            </tr>"""
-        
-        # Replace placeholder with generated rows
-        html = html.replace("{{STOCK_ROWS}}", rows_html)
-    
-    return html
+            if response.status_code == 200:
+                try:
+                    response_json = response.json()
+                    status = response_json.get("status")
+                    if status == "Stockflow alert email sent":
+                        return True
+                except ValueError:
+                    logger.error("Invalid JSON response")
+            
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Request failed: {e}")
 
-def send_email(stock_list,error_list):
-    current_datetime = datetime.now().strftime("%B %d %Y - %I:%M %p")
-    subject = f"Stockflow Alert: Buy Signal Detected - {current_datetime}"
-    sender_addr = "noreply.avinash.s@gmail.com"
-    smtp_host = os.getenv("SMTP_HOST")
-    
-    # Format stock details
-    body=prepare_template(stock_list)
-    smtp_user = "noreply.avinash.s@gmail.com"
-    smtp_password = os.getenv("SMTP_PASSWORD")
-    smtp_port = os.getenv("SMTP_PORT")
-    reciever = "avinashsubhash19@outlook.com"
-    msg = MIMEMultipart("alternative")
-    msg['Subject'] = subject
-    msg['From'] = formataddr(("Market Monitor", sender_addr))
-    msg['To'] = reciever
-    msg.attach(MIMEText(body, "html"))
-    #msg.set_content(body)
-    server = smtplib.SMTP(smtp_host,smtp_port)    
-    server.starttls()
-    server.login(smtp_user,smtp_password)
-    server.send_message(msg)
+        time.sleep(1)
+    return False

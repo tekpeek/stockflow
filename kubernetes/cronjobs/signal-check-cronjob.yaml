@@ -27,6 +27,11 @@ spec:
                   configMapKeyRef:
                     name: service-urls
                     key: MARKET_INTEL_ENGINE
+              - name: EVENT_DISPATCHER
+                valueFrom:
+                  configMapKeyRef:
+                    name: service-urls
+                    key: EVENT_DISPATCHER
               - name: SMTP_HOST
                 valueFrom:
                   secretKeyRef:

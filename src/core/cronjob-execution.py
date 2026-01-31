@@ -23,6 +23,7 @@ try:
     STOCKFLOW_CONTROLLER_URL = os.getenv("STOCKFLOW_CONTROLLER")
     SIGNAL_ENGINE_URL = os.getenv("SIGNAL_ENGINE")
     MARKET_INTEL_ENGINE_URL = os.getenv("MARKET_INTEL_ENGINE")
+    EVENT_DISPATCHER_URL = os.getenv("EVENT_DISPATCHER")
 except Exception as e:
     logger.error(f"Error loading environment variables: {str(e)}")
 
@@ -224,5 +225,5 @@ if __name__ == "__main__":
     list_data = identify_stocks()
     final_list = perform_market_sentiment_analysis(list_data[0])
     if len(final_list)>0:
-        email_trigger.send_email(final_list,[])
-        print("Email Sent")
+        email_trigger.send_email(logger,EVENT_DISPATCHER_URL,final_list)
+        logger.info("Email Sent")

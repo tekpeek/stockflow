@@ -46,7 +46,6 @@ fi
 if [[ "$namespace" != "default" ]]; then
     STOCKFLOW_CONTROLLER="$STOCKFLOW_CONTROLLER/$namespace"
     SIGNAL_ENGINE="$SIGNAL_ENGINE/$namespace"
-    EVENT_DISPATCHER="$EVENT_DISPATCHER/$namespace"
 fi
 
 log_message "INFO" "Loaded Variables"

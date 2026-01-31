@@ -225,5 +225,5 @@ if __name__ == "__main__":
     list_data = identify_stocks()
     final_list = perform_market_sentiment_analysis(list_data[0])
     if len(final_list)>0:
-        email_trigger.send_email(logger,final_list)
+        email_trigger.send_email(logger,EVENT_DISPATCHER_URL,final_list)
         logger.info("Email Sent")

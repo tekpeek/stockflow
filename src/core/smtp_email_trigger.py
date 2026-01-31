@@ -1,7 +1,7 @@
 import requests
 import time
 
-def send_email(logger,stock_list,retries=3,timeout=20):
+def send_email(logger,EVENT_DISPATCHER_URL,stock_list,retries=3,timeout=20):
     url = f"{EVENT_DISPATCHER_URL}/api/v1/email-alert"
     headers = {"Content-Type": "application/json"}
     payload = {"stock_list": stock_list}
@@ -15,7 +15,7 @@ def send_email(logger,stock_list,retries=3,timeout=20):
                 try:
                     response_json = response.json()
                     status = response_json.get("status")
-                    if status == "Stockflow alert email sent":
+                    if status == "Email alert process initiated":
                         return True
                 except ValueError:
                     logger.error("Invalid JSON response")

@@ -82,6 +82,7 @@ def get_top_500_stocks_by_volume(csv_file_path: str = "/home/ubuntu/app/EQUITY_L
                 # Log progress every 100 stocks
                 if (i + 1) % 100 == 0:
                     logger.info(f"Processed {i + 1}/{len(nse_symbols)} stocks")
+                    break
                     
             except Exception as e:
                 logger.warning(f"Error fetching data for {symbol}: {str(e)}")
@@ -93,7 +94,7 @@ def get_top_500_stocks_by_volume(csv_file_path: str = "/home/ubuntu/app/EQUITY_L
         sorted_stocks = sorted(volume_data.items(), key=lambda x: x[1], reverse=True)
         
         # Extract top 500 stock symbols
-        top_500_stocks = [stock[0] for stock in sorted_stocks[:500]]
+        top_500_stocks = [stock[0] for stock in sorted_stocks[:50]]
         
         logger.info(f"Returning top {len(top_500_stocks)} stocks by volume")
         

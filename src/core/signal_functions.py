@@ -1,5 +1,7 @@
 import yfinance as yf
 import pandas as pd
+from datetime import datetime
+import numpy as np
 
 def calculate_final_signal(logging,stock_id: str,interval: str,period: int,window: int, num_std: float):
     nse_symbol = stock_id.upper()
@@ -37,47 +39,106 @@ def calculate_individual(logging,option: str, stock_id: str,interval: str,period
         logging.info(f"Invalid Strategy option: {option}")
         return {"error": "Invalid Strategy option!"}
 def signal_aggregator_v3(logging,rsi_result, macd_result, bb_result,cmf_result):
+    logging.info("Initiating signal_aggregator_v3 with scoring.")
     reasons = []
-    buy_signal = False
-    buy_signal_list = []
-    signal_strength = "Weak"
-    signal_count = 0
+    signals = []
+    score = 0
+    
+    # helper to convert potential numpy types
+    def to_float(val):
+        if hasattr(val, 'item'):
+            return float(val.item())
+        return float(val)
+
+    # 1. RSI Logic
+    rsi_val = to_float(rsi_result['rsi'])
+    rsi_smooth = to_float(rsi_result['rsi_smooth'])
     positive_rsi = False
-    logging.info("Initiating signal_aggregator_v3.")
-    positive_cmf = float(cmf_result['latest_cmf']) >= 0
-
-    bb_one =  (bb_result['price'] - bb_result['lower_band']) / bb_result['lower_band'] <= 0.014
-
-    if rsi_result['rsi'] < 30 and rsi_result['rsi_smooth'] > rsi_result['rsi']:
+    if rsi_val < 30 and rsi_smooth > rsi_val:
         positive_rsi = True
-    elif rsi_result['rsi'] >= 40 and rsi_result['rsi'] <= 70 and rsi_result['rsi_smooth'] < rsi_result['rsi']:
+        score += 1
+        reasons.append(f"RSI is oversold ({rsi_val:.2f}) and recovering")
+        signals.append("RSI_OVERSOLD")
+    elif 40 <= rsi_val <= 70 and rsi_smooth < rsi_val:
         positive_rsi = True
+        score += 1
+        reasons.append(f"RSI is in bullish range ({rsi_val:.2f}) and rising")
+        signals.append("RSI_BULLISH_MOMENTUM")
+
+    # 2. CMF Logic
+    cmf_val = to_float(cmf_result['latest_cmf'])
+    positive_cmf = cmf_val >= 0
+    if positive_cmf:
+        score += 1
+        reasons.append(f"CMF is positive ({cmf_val:.4f}), indicating accumulation")
+        signals.append("CMF_POSITIVE")
+
+    # 3. MACD Logic
+    macd_val = to_float(macd_result['macd'])
+    signal_val = to_float(macd_result['signal'])
+    hist_val = to_float(macd_result['histogram'])
     
-    if float(macd_result['macd']) >= float(macd_result['signal']) and macd_result['is_potential_entry'] and positive_cmf:
-        signal_count+=1
-        buy_signal_list.append("MACD-1 & CMF")
-    if float(macd_result['histogram']) >=0 and ("bullish" in macd_result['trend_strength']):
-        signal_count+=1
-        buy_signal_list.append("MACD-2")
+    if macd_result['crossover'] == "bullish_crossover":
+        score += 2
+        reasons.append("MACD Bullish Crossover detected")
+        signals.append("MACD_CROSSOVER")
     
-    if bb_one and (positive_cmf or positive_rsi):
-        signal_count+=1
-        buy_signal_list.append("BB-1 & (CMF,RSI)")
+    if hist_val > 0 and "bullish" in macd_result['trend_strength']:
+        score += 1
+        reasons.append(f"MACD Histogram is positive ({hist_val:.4f}) with bullish strength")
+        signals.append("MACD_BULLISH_TREND")
+
+    # 4. Bollinger Bands Logic
+    price = to_float(bb_result['price'])
+    lower_band = to_float(bb_result['lower_band'])
+    middle_band = to_float(bb_result['middle_band'])
+    upper_band = to_float(bb_result['upper_band'])
     
-    if bb_result['crossed_above_middle'] and (positive_cmf or positive_rsi):
-        signal_count+=1
-        buy_signal_list.append("BB-2 & RSI")
+    # Proximity to lower band (within 1.5%)
+    if (price - lower_band) / lower_band <= 0.015:
+        score += 1
+        reasons.append("Price is near the lower Bollinger Band (potential support)")
+        signals.append("BB_LOWER_PROXIMITY")
     
-    if signal_count > 2:
-        signal_strength = "Strong"
-    if signal_count >= 2:
+    if bb_result['crossed_above_middle']:
+        score += 1
+        reasons.append("Price crossed above the middle Bollinger Band")
+        signals.append("BB_MIDDLE_CROSSOVER")
+
+    # Final Recommendation
+    recommendation = "NONE"
+    buy_signal = False
+    strength = "Weak"
+    
+    if score >= 4:
+        recommendation = "BUY"
         buy_signal = True
-    logging.info("Completed signal_aggregator_v3.")
+        strength = "Strong"
+    elif score >= 2:
+        recommendation = "WATCH"
+        buy_signal = score >= 3 # Maintain backward compatibility if score is 3
+        strength = "Moderate"
+    
+    # Ensure buy is true if recommendation is BUY
+    if recommendation == "BUY":
+        buy_signal = True
+
+    logging.info(f"Analysis completed. Score: {score}, Recommendation: {recommendation}")
+    
     return {
+        'recommendation': recommendation,
         'buy': buy_signal,
-        'reason': "; ".join(reasons),
-        'signals': "; ".join(buy_signal_list),
-        'strength': f"{signal_strength}"
+        'score': score,
+        'strength': strength,
+        'reason': ". ".join(reasons),
+        'signals': "; ".join(signals),
+        'metadata': {
+            'rsi': {'value': rsi_val, 'smooth': rsi_smooth},
+            'macd': {'value': macd_val, 'signal': signal_val, 'histogram': hist_val},
+            'bb': {'upper': upper_band, 'lower': lower_band, 'middle': middle_band, 'bandwidth': to_float(bb_result['band_width'])},
+            'cmf': {'value': cmf_val}
+        },
+        'timestamp': datetime.now().isoformat()
     }
 
 def signal_aggregator_v2(rsi_result, macd_result, bb_result,cmf_result):

@@ -8,6 +8,7 @@ import time
 import sys
 from typing import List, Tuple
 import logging
+from signal_functions import calculate_bharatquant_v4
 
 # Configure logging
 logging.basicConfig(
@@ -204,7 +205,50 @@ def identify_stocks():
             ticker_list.append(ticker)
             final_buy_list.append([ticker, signals, strength, reasons])
 
+def identify_v4_stocks():
+    logger.info("Initiating BharatQuant v4 Scanning...")
+    final_buy_list = []
+    error_list = []
+    ticker_list = []
+    
+    # We use top_500_nse_tickers imported in main
+    import top_500_nse_tickers
+    tickers = top_500_nse_tickers.top_500_nse_tickers[:3]
+    
+    for i, ticker in enumerate(tickers):
+        try:
+            # v4.3 Optimization: Score >= 6 for high-probability swing
+            res = calculate_bharatquant_v4(logger, ticker)
+            
+            if res.get('buy') and res.get('score', 0) >= 6:
+                logger.info(f"V4 BUY DETECTED: {ticker} | Score: {res['score']}")
+                ticker_list.append(ticker)
+                # Format to match identifying_stocks output: [ticker, signals, strength, reasons]
+                final_buy_list.append([
+                    ticker, 
+                    res.get('signals', ''), 
+                    res.get('strength', ''), 
+                    res.get('reason', '')
+                ])
+                
+            if (i + 1) % 50 == 0:
+                logger.info(f"V4 Scan Progress: {i + 1}/{len(tickers)}")
+                
+        except Exception as e:
+            logger.error(f"Error in v4 analysis for {ticker}: {str(e)}")
+            error_list.append(ticker)
+            continue
+
     return [final_buy_list, error_list, ticker_list]
+
+def identify_v4_combined(legacy_results, v4_results):
+    """
+    Combines legacy v3 (Signal Engine API) and new v4 results.
+    Prioritizes v4 but includes both for downstream AI analysis.
+    """
+    combined_buy_list = legacy_results[0] + v4_results[0]
+    combined_ticker_list = list(set(legacy_results[2] + v4_results[2]))
+    return [combined_buy_list, legacy_results[1] + v4_results[1], combined_ticker_list]
 
 def perform_market_sentiment_analysis(ticker_list):
     prompt=""
@@ -222,8 +266,24 @@ def perform_market_sentiment_analysis(ticker_list):
 if __name__ == "__main__":
     _ = get_top_500_stocks_by_volume()
     import top_500_nse_tickers
-    list_data = identify_stocks()
-    final_list = perform_market_sentiment_analysis(list_data[0])
-    if len(final_list)>0:
-        email_trigger.send_email(logger,EVENT_DISPATCHER_URL,final_list)
-        logger.info("Email Sent")
+    
+    # 1. Fetch BharatQuant v4 Signals (Local Engine) - ONLY V4
+    logger.info("Starting BharatQuant v4 Signal Identification...")
+    v4_results = identify_v4_stocks()
+    v4_payload = v4_results[0]
+    unique_tickers = v4_results[2]
+    
+    logger.info(f"Total Unique Stocks identified by V4: {len(unique_tickers)}")
+    
+    if len(v4_payload) > 0:
+        # 2. Perform AI Sentiment Analysis
+        final_list = perform_market_sentiment_analysis(v4_payload)
+        
+        if len(final_list) > 0:
+            # 3. Send Email Alert
+            email_trigger.send_email(logger, EVENT_DISPATCHER_URL, final_list)
+            logger.info("Email Sent successfully with BharatQuant v4 signals.")
+        else:
+            logger.info("No stocks passed the AI Sentiment filter (Score >= 5).")
+    else:
+        logger.info("No BUY signals detected by BharatQuant v4 engine.")

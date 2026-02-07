@@ -268,9 +268,17 @@ def calculate_rsi(stock_symbol: str, df, period: int, interval: str) -> float:
     latest_rsi = rsi.dropna().iloc[-1]
     rsi_smooth = rsi.ewm(span=5, adjust=False).mean().iloc[-1]
     
+    # Handle case where result might be a series (if df had multiple symbols) or a scalar
+    try:
+        val_rsi = latest_rsi[stock_symbol] if hasattr(latest_rsi, '__getitem__') else latest_rsi
+        val_smooth = rsi_smooth[stock_symbol] if hasattr(rsi_smooth, '__getitem__') else rsi_smooth
+    except (KeyError, IndexError):
+        val_rsi = latest_rsi
+        val_smooth = rsi_smooth
+
     return {
-        'rsi': round(float(latest_rsi[stock_symbol]), 2),
-        'rsi_smooth': round(float(rsi_smooth[stock_symbol]), 2)
+        'rsi': round(float(val_rsi), 2),
+        'rsi_smooth': round(float(val_smooth), 2)
     }
 
 def calculate_macd_signal(stock_symbol: str, df, interval: str) -> dict:
@@ -423,3 +431,297 @@ def calculate_cmf(stock_symbol: str,df, period: str, interval: str, window: int 
         'latest_cmf': f"{latest_cmf}"
         #'slope': f"{slope}"
     }
+
+def to_native(obj):
+    """
+    Recursively converts numpy types to standard python types for JSON serialization.
+    """
+    if isinstance(obj, dict):
+        return {k: to_native(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [to_native(i) for i in obj]
+    elif isinstance(obj, (np.bool_, np.integer, np.floating)):
+        return obj.item()
+    elif isinstance(obj, np.ndarray):
+        return to_native(obj.tolist())
+    return obj
+
+def detect_market_structure(df, window=5):
+    """
+    Detects Higher Highs (HH) and Higher Lows (HL) on the given dataframe.
+    """
+    if len(df) < window * 2 + 1:
+        return {"structure": "Insufficient Data", "is_higher_low": False}
+    
+    # Identify local peaks and troughs
+    # A peak is a high higher than 'window' bars before and after
+    df = df.copy()
+    df['peak'] = df['High'].rolling(window=window*2+1, center=True).max() == df['High']
+    df['trough'] = df['Low'].rolling(window=window*2+1, center=True).min() == df['Low']
+    
+    peaks = df[df['peak']]['High']
+    troughs = df[df['trough']]['Low']
+    
+    if len(troughs) < 2:
+        return {"structure": "Building", "is_higher_low": False}
+    
+    last_trough = troughs.iloc[-1]
+    prev_trough = troughs.iloc[-2]
+    
+    is_higher_low = last_trough > prev_trough
+    
+    structure = "Bullish" if is_higher_low else "Neutral/Bearish emotion"
+    
+    return {
+        "structure": structure,
+        "is_higher_low": is_higher_low,
+        "last_trough": last_trough,
+        "prev_trough": prev_trough
+    }
+
+def detect_rsi_divergence(df, rsi_series, window=20):
+    """
+    Detects Bullish RSI Divergence: Price makes lower low, RSI makes higher low.
+    """
+    if len(df) < window:
+        return {"divergence": False}
+    
+    # Look at recent local lows
+    df = df.copy()
+    df['rsi'] = rsi_series
+    df['low_swing'] = df['Low'].rolling(window=5, center=True).min() == df['Low']
+    
+    lows = df[df['low_swing']].tail(2)
+    
+    if len(lows) < 2:
+        return {"divergence": False}
+    
+    p1, p2 = lows['Low'].iloc[0], lows['Low'].iloc[1]
+    r1, r2 = lows['rsi'].iloc[0], lows['rsi'].iloc[1]
+    
+    # Bullish Divergence: Price Lower Low, RSI Higher Low
+    is_divergence = p2 < p1 and r2 > r1
+    
+    return {"divergence": is_divergence}
+
+def detect_bb_squeeze(df, window=20):
+    """
+    Detects Bollinger Band Squeeze (low volatility before breakout).
+    """
+    close = df['Close']
+    middle_band = close.rolling(window).mean()
+    std_dev = close.rolling(window).std()
+    upper_band = middle_band + (2 * std_dev)
+    lower_band = middle_band - (2 * std_dev)
+    
+    bandwidth = (upper_band - lower_band) / middle_band
+    # A squeeze is defined as bandwidth being in the bottom 25% of its recent history
+    # Use a smaller window for rank if data is short
+    rank_window = min(len(bandwidth.dropna()), 100)
+    if rank_window < 20:
+        return {"is_squeeze": False, "is_expanding": False, "bandwidth_percentile": 0.5}
+
+    percentile = bandwidth.rolling(window=rank_window).rank(pct=True).iloc[-1]
+    
+    is_squeeze = percentile < 0.25
+    
+    # Expansion: currently widening?
+    is_expanding = bandwidth.iloc[-1] > bandwidth.iloc[-2]
+    
+    return {"is_squeeze": is_squeeze, "is_expanding": is_expanding, "bandwidth_percentile": percentile}
+
+def signal_aggregator_v4(logging, rsi_res, macd_res, bb_res, cmf_res, structure_res, macro_res):
+    """
+    BharatQuant v4: Hard Hierarchy Aggregator.
+    """
+    logging.info("Initiating BharatQuant v4 Aggregator.")
+    
+    score = 0
+    reasons = []
+    signals = []
+    
+    # 1. Macro Filter (Layer 1) - CRITICAL
+    if not macro_res.get('is_bullish_macro', False):
+        logging.info("V4 Fail: Bearish Macro Regime.")
+        return {
+            "recommendation": "NONE",
+            "buy": False,
+            "score": 0,
+            "strength": "Weak",
+            "reason": "Bearish Macro Regime (Daily Trend)",
+            "signals": "MACRO_BEARISH"
+        }
+    
+    # 2. Structure Layer (Layer 2) - BASE +3
+    if structure_res.get('is_higher_low', False):
+        score += 3
+        reasons.append("Hourly Higher Low confirmed (Bullish Structure)")
+        signals.append("STRUCTURE_HL")
+    else:
+        # The user said "buy only if all three layers agree"
+        # Since Layer 2 didn't agree, we stop or give a WATCH
+        logging.info("V4 Info: No Bullish Structure HL detected.")
+    
+    # 3. Trigger Layer (Layer 3) - CONFLUENCE
+    # RSI Divergence (+2)
+    if rsi_res.get('divergence', False):
+        score += 2
+        reasons.append("Bullish RSI Divergence detected")
+        signals.append("RSI_DIVERGENCE")
+        
+    # Volatility (+2)
+    if bb_res.get('is_squeeze', False) and bb_res.get('is_expanding', False):
+        score += 2
+        reasons.append("Bollinger Band Squeeze & Expansion (Breakout)")
+        signals.append("BB_SQUEEZE_BREAKOUT")
+    
+    # Liquidity (+1)
+    if float(cmf_res.get('latest_cmf', 0)) > 0.15:
+        score += 1
+        reasons.append(f"Strong Money Flow (CMF: {cmf_res['latest_cmf']})")
+        signals.append("CMF_STRONG")
+        
+    # Momentum (+1)
+    if macd_res.get('crossover') == "bullish_crossover":
+        score += 1
+        reasons.append("MACD Bullish Crossover")
+        signals.append("MACD_CROSSOVER")
+
+    # FINAL RECOMMENDATION (Hard Hierarchy: Score >= 4 means 1+2+3 agree)
+    recommendation = "NONE"
+    strength = "No Signal"
+    buy_signal = False
+    
+    if score >= 7:
+        recommendation = "BUY"
+        strength = "Institutional (Unicorn)"
+        buy_signal = True
+    elif score >= 5:
+        recommendation = "BUY"
+        strength = "Strong (Professional)"
+        buy_signal = True
+    elif score >= 4:
+        recommendation = "BUY"
+        strength = "Moderate (Aggressive)"
+        buy_signal = True
+    elif score >= 2:
+        recommendation = "WATCH"
+        strength = "Weak (Wait for Confirmation)"
+        buy_signal = False
+    
+    logging.info(f"V4 Final: Score {score}, Recommendation {recommendation}")
+    
+    return {
+        'recommendation': recommendation,
+        'buy': buy_signal,
+        'score': score,
+        'strength': strength,
+        'reason': ". ".join(reasons),
+        'signals': "; ".join(signals),
+        'timestamp': datetime.now().isoformat()
+    }
+
+def calculate_bharatquant_v4(logging, stock_id: str, df_daily_input=None, df_hourly_input=None):
+    """
+    Orchestrates BharatQuant v4 analysis: Fetches 1D and 1H data (or uses provided) and calls the aggregator.
+    """
+    symbol = stock_id.upper()
+    logging.info(f"Starting BharatQuant v4 analysis for {symbol}")
+    
+    # 1. Fetch Multi-Timeframe Data
+    if df_daily_input is not None and df_hourly_input is not None:
+        df_daily = df_daily_input
+        df_hourly = df_hourly_input
+    else:
+        # Daily data for Macro (1y lookback)
+        df_daily = yf.download(symbol, period="1y", interval="1d", progress=False, auto_adjust=False)
+        # Hourly data for Structure and Signals (60d lookback for 1h is usually the limit for yfinance)
+        df_hourly = yf.download(symbol, period="60d", interval="1h", progress=False, auto_adjust=False)
+    
+    if df_daily.empty or df_hourly.empty:
+        return {"error": f"Missing data for {symbol}"}
+    
+    # Flatten columns if multi-indexed
+    if isinstance(df_daily.columns, pd.MultiIndex):
+        df_daily.columns = df_daily.columns.get_level_values(0)
+    if isinstance(df_hourly.columns, pd.MultiIndex):
+        df_hourly.columns = df_hourly.columns.get_level_values(0)
+
+    # 2. Layer 1: Macro Trend (Daily)
+    close_daily = df_daily['Close']
+    ema50_d = close_daily.ewm(span=50, adjust=False).mean()
+    ema200_d = close_daily.ewm(span=200, adjust=False).mean()
+    
+    latest_price_d = close_daily.iloc[-1]
+    latest_ema50_d = ema50_d.iloc[-1]
+    latest_ema200_d = ema200_d.iloc[-1]
+    
+    # Golden Zone: Price > EMA200 and EMA50 > EMA200
+    is_bullish_macro = latest_price_d > latest_ema200_d and latest_ema50_d > latest_ema200_d
+    macro_res = {'is_bullish_macro': is_bullish_macro}
+
+    # 3. Layer 2: Market Structure (Hourly)
+    structure_res = detect_market_structure(df_hourly)
+    
+    # 4. Layer 3: Triggers (Hourly)
+    # RSI
+    rsi_dict = calculate_rsi(stock_id, df_hourly, 14, "1h")
+    # MACD
+    macd_res = calculate_macd_signal(stock_id, df_hourly, "1h")
+    # Bollinger Bands
+    bb_res = calculate_bollinger_bands(stock_id, df_hourly, 20, 2)
+    # CMF
+    cmf_res = calculate_cmf(stock_id, df_hourly, "14", "1h", 20)
+    
+    # ATR for TP/SL
+    high_h = df_hourly['High']
+    low_h = df_hourly['Low']
+    close_h = df_hourly['Close']
+    tr = pd.concat([high_h - low_h, (high_h - close_h.shift()).abs(), (low_h - close_h.shift()).abs()], axis=1).max(axis=1)
+    atr_h = tr.rolling(window=14).mean().iloc[-1]
+    
+    # RSI Divergence
+    # We need a series for RSI divergence detection
+    close_h = df_hourly['Close']
+    delta = close_h.diff()
+    gain = delta.clip(lower=0)
+    loss = -delta.clip(upper=0)
+    avg_gain = gain.ewm(alpha=1/14, min_periods=14, adjust=False).mean()
+    avg_loss = loss.ewm(alpha=1/14, min_periods=14, adjust=False).mean()
+    rs = avg_gain / avg_loss
+    rsi_series = 100 - (100 / (1 + rs))
+    
+    rsi_div_res = detect_rsi_divergence(df_hourly, rsi_series)
+    # BB Squeeze
+    bb_sq_res = detect_bb_squeeze(df_hourly)
+    
+    # 5. Aggregate
+    final_res = signal_aggregator_v4(
+        logging, 
+        rsi_div_res, 
+        macd_res, 
+        bb_sq_res, 
+        cmf_res, 
+        structure_res, 
+        macro_res
+    )
+    
+    # 6. Set TP/SL if BUY (v4.2 Reverted to Tight Controls)
+    if final_res['buy']:
+        latest_price = float(df_hourly['Close'].iloc[-1])
+        final_res['entry_price'] = latest_price
+        final_res['take_profit'] = round(latest_price + (1.5 * float(atr_h)), 2)
+        if structure_res.get('last_trough'):
+            final_res['stop_loss'] = round(float(structure_res['last_trough']), 2)
+    
+    # Add metadata for debugging
+    final_res['metadata'] = {
+        'macro': {'price': float(latest_price_d), 'ema50': float(latest_ema50_d), 'ema200': float(latest_ema200_d)},
+        'structure': structure_res,
+        'rsi': rsi_dict,
+        'macd': macd_res,
+        'bb': bb_res,
+        'cmf': cmf_res
+    }
+
+    return to_native(final_res)

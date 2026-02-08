@@ -47,120 +47,21 @@ def save_list_to_file(stock_list: List[str], filename: str) -> None:
         logger.error(f"Error saving list to file {filename}: {str(e)}")
 
 
-def get_top_500_stocks_by_volume(csv_file_path: str = "/home/ubuntu/app/EQUITY_L.csv") -> List[str]:
+def get_top_500_stocks_from_mount() -> List[str]:
+    mount_path = "/app/data/tickers"
     try:
-        # Read the CSV file
-        logger.info(f"Reading stock symbols from {csv_file_path}")
-        df = pd.read_csv(csv_file_path)
+        logger.info(f"Reading top stocks from mount: {mount_path}")
+        if not os.path.exists(mount_path):
+            logger.warning(f"Mount point {mount_path} does not exist. Falling back to local import.")
+            return []
         
-        # Extract symbols from the first column
-        symbols = df.iloc[:, 0].tolist()  # First column contains SYMBOL
-        logger.info(f"Found {len(symbols)} stock symbols")
-        
-        # Add .ns suffix for NSE stocks
-        nse_symbols = [f"{symbol}.NS" for symbol in symbols]
-        
-        # Dictionary to store volume data
-        volume_data = {}
-        
-        # Fetch volume data for each stock
-        logger.info("Fetching volume data from yfinance...")
-        for i, symbol in enumerate(nse_symbols):
-            try:
-                # Add small delay to avoid rate limiting
-                if i % 10 == 0 and i > 0:
-                    time.sleep(1)
-                # Fetch stock data
-                ticker = yf.Ticker(symbol)
-                hist = ticker.history(period="1d")
-                
-                if not hist.empty and 'Volume' in hist.columns:
-                    volume = hist['Volume'].iloc[-1]  # Get latest volume
-                    if volume > 0:  # Only include stocks with positive volume
-                        volume_data[symbol] = volume
-                
-                # Log progress every 100 stocks
-                if (i + 1) % 100 == 0:
-                    logger.info(f"Processed {i + 1}/{len(nse_symbols)} stocks")
-                    
-            except Exception as e:
-                logger.warning(f"Error fetching data for {symbol}: {str(e)}")
-                continue
-        
-        logger.info(f"Successfully fetched volume data for {len(volume_data)} stocks")
-        
-        # Sort by volume in descending order
-        sorted_stocks = sorted(volume_data.items(), key=lambda x: x[1], reverse=True)
-        
-        # Extract top 500 stock symbols
-        top_500_stocks = [stock[0] for stock in sorted_stocks[:500]]
-        
-        logger.info(f"Returning top {len(top_500_stocks)} stocks by volume")
-        
-        # Save the list to a new Python file
-        save_list_to_file(top_500_stocks, "/home/ubuntu/app/top_500_nse_tickers.py")
-        
-        return top_500_stocks
-        
+        with open(mount_path, 'r') as f:
+            tickers_str = f.read().strip()
+            tickers = tickers_str.split(",") if tickers_str else []
+            logger.info(f"Successfully read {len(tickers)} stocks from mount")
+            return tickers
     except Exception as e:
-        logger.error(f"Error in get_top_500_stocks_by_volume: {str(e)}")
-        return []
-
-
-def get_top_500_stocks_by_volume_with_volume_data(csv_file_path: str = "/home/ubuntu/app/EQUITY_L.csv") -> List[Tuple[str, float]]:
-    try:
-        # Read the CSV file
-        logger.info(f"Reading stock symbols from {csv_file_path}")
-        df = pd.read_csv(csv_file_path)
-        
-        # Extract symbols from the first column
-        symbols = df.iloc[:, 0].tolist()  # First column contains SYMBOL
-        logger.info(f"Found {len(symbols)} stock symbols")
-        
-        # Add .ns suffix for NSE stocks
-        nse_symbols = [f"{symbol}.NS" for symbol in symbols]
-        
-        # Dictionary to store volume data
-        volume_data = {}
-        
-        # Fetch volume data for each stock
-        logger.info("Fetching volume data from yfinance...")
-        for i, symbol in enumerate(nse_symbols):
-            try:
-                # Add small delay to avoid rate limiting
-                if i % 10 == 0 and i > 0:
-                    time.sleep(1)
-                
-                # Fetch stock data
-                ticker = yf.Ticker(symbol)
-                hist = ticker.history(period="1d")
-                
-                if not hist.empty and 'Volume' in hist.columns:
-                    volume = hist['Volume'].iloc[-1]  # Get latest volume
-                    if volume > 0:  # Only include stocks with positive volume
-                        volume_data[symbol] = volume
-                
-                # Log progress every 100 stocks
-                if (i + 1) % 100 == 0:
-                    logger.info(f"Processed {i + 1}/{len(nse_symbols)} stocks")
-                    
-            except Exception as e:
-                logger.warning(f"Error fetching data for {symbol}: {str(e)}")
-                continue
-        
-        logger.info(f"Successfully fetched volume data for {len(volume_data)} stocks")
-        
-        # Sort by volume in descending order
-        sorted_stocks = sorted(volume_data.items(), key=lambda x: x[1], reverse=True)
-        
-        # Extract top 500 stock symbols with volume data
-        top_500_stocks = sorted_stocks[:500]
-        
-        logger.info(f"Returning top {len(top_500_stocks)} stocks by volume with volume data")
-        return top_500_stocks
-        
-    except Exception as e:
-        logger.error(f"Error in get_top_500_stocks_by_volume_with_volume_data: {str(e)}")
+        logger.error(f"Error reading stocks from mount: {str(e)}")
         return []
 
 def fetch_openai_analysis(url, prompt, retries=3, timeout=240):
@@ -204,6 +105,43 @@ def identify_stocks():
             ticker_list.append(ticker)
             final_buy_list.append([ticker, signals, strength, reasons])
 
+def identify_v4_stocks():
+    logger.info("Initiating BharatQuant v4 Scanning...")
+    final_buy_list = []
+    error_list = []
+    ticker_list = []
+    
+    # Fetch tickers from Mount (ConfigMap)
+    tickers = get_top_500_stocks_from_mount()
+    
+    if not tickers:
+        logger.error("No tickers found to scan.")
+        return [[], [], []]
+
+    for i, ticker in enumerate(tickers):
+        try:
+            # v4.3 Optimization: Score >= 6 for high-probability swing
+            res = requests.get(f"{SIGNAL_ENGINE_URL}/api/{ticker}")
+            res = res.json()
+            if res.get('buy') and res.get('score', 0) >= 6:
+                logger.info(f"V4 BUY DETECTED: {ticker} | Score: {res['score']}")
+                ticker_list.append(ticker)
+                # Format to match identifying_stocks output: [ticker, signals, strength, reasons]
+                final_buy_list.append([
+                    ticker, 
+                    res.get('signals', ''), 
+                    res.get('strength', ''), 
+                    res.get('reason', '')
+                ])
+                
+            if (i + 1) % 50 == 0:
+                logger.info(f"V4 Scan Progress: {i + 1}/{len(tickers)}")
+                
+        except Exception as e:
+            logger.error(f"Error in v4 analysis for {ticker}: {str(e)}")
+            error_list.append(ticker)
+            continue
+
     return [final_buy_list, error_list, ticker_list]
 
 def perform_market_sentiment_analysis(ticker_list):
@@ -220,10 +158,22 @@ def perform_market_sentiment_analysis(ticker_list):
     return final_list
 
 if __name__ == "__main__":
-    _ = get_top_500_stocks_by_volume()
-    import top_500_nse_tickers
-    list_data = identify_stocks()
-    final_list = perform_market_sentiment_analysis(list_data[0])
-    if len(final_list)>0:
-        email_trigger.send_email(logger,EVENT_DISPATCHER_URL,final_list)
-        logger.info("Email Sent")
+    # 1. Fetch BharatQuant v4 Signals (Local Engine) - ONLY V4
+    logger.info("Starting BharatQuant v4 Signal Identification...")
+    v4_results = identify_v4_stocks()
+    v4_payload = v4_results[0]
+    unique_tickers = v4_results[2]
+    
+    logger.info(f"Total Unique Stocks identified by V4: {len(unique_tickers)}")
+    
+    if len(v4_payload) > 0:
+        # 2. Perform AI Sentiment Analysis
+        final_list = perform_market_sentiment_analysis(v4_payload)
+        if len(final_list) > 0:
+            # 3. Send Email Alert
+            email_trigger.send_email(logger, EVENT_DISPATCHER_URL, final_list)
+            logger.info("Email Sent successfully with BharatQuant v4 signals.")
+        else:
+            logger.info("No stocks passed the AI Sentiment filter (Score >= 5).")
+    else:
+        logger.info("No BUY signals detected by BharatQuant v4 engine.")

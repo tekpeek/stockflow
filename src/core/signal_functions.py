@@ -6,18 +6,7 @@ import numpy as np
 def calculate_final_signal(logging,stock_id: str,interval: str,period: int,window: int, num_std: float):
     nse_symbol = stock_id.upper()
     df = yf.download(nse_symbol, period="1y", interval=interval, progress=False, auto_adjust=False)
-    logging.info(f"Fetched data for {nse_symbol}")
-    rsi = calculate_rsi(stock_id,df,period,interval)
-    logging.info(f"Calculated RSI for {nse_symbol}")
-    macd = calculate_macd_signal(stock_id,df,interval)
-    logging.info(f"Calculated MACD for {nse_symbol}")
-    bb = calculate_bollinger_bands(stock_id,df,window,num_std)
-    logging.info(f"Calculated Bollinger Bands for {nse_symbol}")
-    cmf = calculate_cmf(stock_id,df,period,interval,window)
-    logging.info(f"Calculated CMF for {nse_symbol}")
-    return signal_aggregator_v3(logging,rsi, macd, bb, cmf)
-    #return signal_aggregator_v2(rsi, macd, bb, cmf)
-    #return should_buy(rsi, macd, bb, cmf)
+    return calculate_bharatquant_v4(logging,stock_id)
 
 def calculate_individual(logging,option: str, stock_id: str,interval: str,period: int,window: int, num_std: float):
     nse_symbol = stock_id.upper()
@@ -38,6 +27,7 @@ def calculate_individual(logging,option: str, stock_id: str,interval: str,period
     else:
         logging.info(f"Invalid Strategy option: {option}")
         return {"error": "Invalid Strategy option!"}
+
 def signal_aggregator_v3(logging,rsi_result, macd_result, bb_result,cmf_result):
     logging.info("Initiating signal_aggregator_v3 with scoring.")
     reasons = []
@@ -706,7 +696,7 @@ def calculate_bharatquant_v4(logging, stock_id: str, df_daily_input=None, df_hou
         macro_res
     )
     
-    # 6. Set TP/SL if BUY (v4.2 Reverted to Tight Controls)
+    # 6. Set TP/SL if BUY
     if final_res['buy']:
         latest_price = float(df_hourly['Close'].iloc[-1])
         final_res['entry_price'] = latest_price
@@ -723,5 +713,5 @@ def calculate_bharatquant_v4(logging, stock_id: str, df_daily_input=None, df_hou
         'bb': bb_res,
         'cmf': cmf_res
     }
-
+    logging.info("Response: ",to_native(final_res))
     return to_native(final_res)

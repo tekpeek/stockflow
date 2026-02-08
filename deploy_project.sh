@@ -126,7 +126,8 @@ kubectl -n "$namespace" create configmap cronjob-config \
  --from-file=src/core/healthcheck-execution.py \
  --from-file=src/core/smtp_email_trigger.py \
  --from-file=src/prompts/market_analysis_prompt.txt \
- --from-file=templates/email-template.html
+ --from-file=templates/email-template.html \
+ --from-file=src/core/top_500_nse_tickers.py
 
 # delete and recreate the cronjob
 kubectl -n "$namespace" delete cronjob signal-check-cronjob --ignore-not-found

@@ -8,7 +8,6 @@ import time
 import sys
 from typing import List, Tuple
 import logging
-from signal_functions import calculate_bharatquant_v4
 
 # Configure logging
 logging.basicConfig(
@@ -107,63 +106,6 @@ def get_top_500_stocks_by_volume(csv_file_path: str = "/home/ubuntu/app/EQUITY_L
         logger.error(f"Error in get_top_500_stocks_by_volume: {str(e)}")
         return []
 
-
-def get_top_500_stocks_by_volume_with_volume_data(csv_file_path: str = "/home/ubuntu/app/EQUITY_L.csv") -> List[Tuple[str, float]]:
-    try:
-        # Read the CSV file
-        logger.info(f"Reading stock symbols from {csv_file_path}")
-        df = pd.read_csv(csv_file_path)
-        
-        # Extract symbols from the first column
-        symbols = df.iloc[:, 0].tolist()  # First column contains SYMBOL
-        logger.info(f"Found {len(symbols)} stock symbols")
-        
-        # Add .ns suffix for NSE stocks
-        nse_symbols = [f"{symbol}.NS" for symbol in symbols]
-        
-        # Dictionary to store volume data
-        volume_data = {}
-        
-        # Fetch volume data for each stock
-        logger.info("Fetching volume data from yfinance...")
-        for i, symbol in enumerate(nse_symbols):
-            try:
-                # Add small delay to avoid rate limiting
-                if i % 10 == 0 and i > 0:
-                    time.sleep(1)
-                
-                # Fetch stock data
-                ticker = yf.Ticker(symbol)
-                hist = ticker.history(period="1d")
-                
-                if not hist.empty and 'Volume' in hist.columns:
-                    volume = hist['Volume'].iloc[-1]  # Get latest volume
-                    if volume > 0:  # Only include stocks with positive volume
-                        volume_data[symbol] = volume
-                
-                # Log progress every 100 stocks
-                if (i + 1) % 100 == 0:
-                    logger.info(f"Processed {i + 1}/{len(nse_symbols)} stocks")
-                    
-            except Exception as e:
-                logger.warning(f"Error fetching data for {symbol}: {str(e)}")
-                continue
-        
-        logger.info(f"Successfully fetched volume data for {len(volume_data)} stocks")
-        
-        # Sort by volume in descending order
-        sorted_stocks = sorted(volume_data.items(), key=lambda x: x[1], reverse=True)
-        
-        # Extract top 500 stock symbols with volume data
-        top_500_stocks = sorted_stocks[:500]
-        
-        logger.info(f"Returning top {len(top_500_stocks)} stocks by volume with volume data")
-        return top_500_stocks
-        
-    except Exception as e:
-        logger.error(f"Error in get_top_500_stocks_by_volume_with_volume_data: {str(e)}")
-        return []
-
 def fetch_openai_analysis(url, prompt, retries=3, timeout=240):
     for attempt in range(retries):
         try:
@@ -213,13 +155,13 @@ def identify_v4_stocks():
     
     # We use top_500_nse_tickers imported in main
     import top_500_nse_tickers
-    tickers = top_500_nse_tickers.top_500_nse_tickers[:3]
+    tickers = top_500_nse_tickers.top_500_nse_tickers
     
     for i, ticker in enumerate(tickers):
         try:
             # v4.3 Optimization: Score >= 6 for high-probability swing
-            res = calculate_bharatquant_v4(logger, ticker)
-            
+            res = requests.get(f"{SIGNAL_ENGINE_URL}/api/{ticker}")
+            res = res.json()
             if res.get('buy') and res.get('score', 0) >= 6:
                 logger.info(f"V4 BUY DETECTED: {ticker} | Score: {res['score']}")
                 ticker_list.append(ticker)
@@ -241,15 +183,6 @@ def identify_v4_stocks():
 
     return [final_buy_list, error_list, ticker_list]
 
-def identify_v4_combined(legacy_results, v4_results):
-    """
-    Combines legacy v3 (Signal Engine API) and new v4 results.
-    Prioritizes v4 but includes both for downstream AI analysis.
-    """
-    combined_buy_list = legacy_results[0] + v4_results[0]
-    combined_ticker_list = list(set(legacy_results[2] + v4_results[2]))
-    return [combined_buy_list, legacy_results[1] + v4_results[1], combined_ticker_list]
-
 def perform_market_sentiment_analysis(ticker_list):
     prompt=""
     with open("/home/ubuntu/app/market_analysis_prompt.txt") as file:
@@ -264,7 +197,7 @@ def perform_market_sentiment_analysis(ticker_list):
     return final_list
 
 if __name__ == "__main__":
-    _ = get_top_500_stocks_by_volume()
+    #_ = get_top_500_stocks_by_volume()
     import top_500_nse_tickers
     
     # 1. Fetch BharatQuant v4 Signals (Local Engine) - ONLY V4
@@ -278,7 +211,6 @@ if __name__ == "__main__":
     if len(v4_payload) > 0:
         # 2. Perform AI Sentiment Analysis
         final_list = perform_market_sentiment_analysis(v4_payload)
-        
         if len(final_list) > 0:
             # 3. Send Email Alert
             email_trigger.send_email(logger, EVENT_DISPATCHER_URL, final_list)

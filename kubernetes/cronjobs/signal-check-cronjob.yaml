@@ -64,6 +64,9 @@ spec:
               - name: cronjob-config-volume
                 mountPath: /home/ubuntu/app/email-template.html
                 subPath: email-template.html
+              - name: cronjob-config-volume
+                mountPath: /home/ubuntu/app/top_500_nse_tickers.py
+                subPath: top_500_nse_tickers.py
           restartPolicy: OnFailure
           volumes:
             - name: cronjob-config-volume

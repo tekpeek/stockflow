@@ -127,11 +127,21 @@ kubectl -n "$namespace" create configmap cronjob-config \
  --from-file=src/core/smtp_email_trigger.py \
  --from-file=src/prompts/market_analysis_prompt.txt \
  --from-file=templates/email-template.html \
- --from-file=src/core/top_500_nse_tickers.py
+ --from-file=src/core/discovery-engine.py
 
 # delete and recreate the cronjob
 kubectl -n "$namespace" delete cronjob signal-check-cronjob --ignore-not-found
 kubectl -n "$namespace" apply -f kubernetes/cronjobs/signal-check-cronjob.yaml
+
+# Ensure market-data configmap exists for mounting (prevent pod start failure)
+if ! kubectl -n "$namespace" get configmap top-stocks-cm > /dev/null 2>&1; then
+    log_message "INFO" "Creating empty top-stocks-cm configmap"
+    kubectl -n "$namespace" create configmap top-stocks-cm --from-literal=tickers=""
+fi
+
+# delete and recreate the discovery cronjob
+kubectl -n "$namespace" delete cronjob stock-discovery-cronjob --ignore-not-found
+kubectl -n "$namespace" apply -f kubernetes/cronjobs/discovery-engine-cronjob.yaml
 
 # create a manual cronjob and check functioning
 #kubectl create job signal-check-manual --from=cronjob/signal-check-cronjob

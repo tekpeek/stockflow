@@ -47,6 +47,11 @@ spec:
                   secretKeyRef:
                     name: smtp-credentials
                     key: smtp-password
+              - name: SF_API_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: api-credentials
+                    key: api-key
             command: ["/bin/bash", "-c", "python3 /home/ubuntu/app/cronjob-execution.py"]
             volumeMounts:
               - name: cronjob-config-volume
@@ -67,8 +72,14 @@ spec:
               - name: cronjob-config-volume
                 mountPath: /home/ubuntu/app/top_500_nse_tickers.py
                 subPath: top_500_nse_tickers.py
+              - name: top-stocks-volume
+                mountPath: /app/data
           restartPolicy: OnFailure
           volumes:
             - name: cronjob-config-volume
               configMap:
                 name: cronjob-config
+            - name: top-stocks-volume
+              configMap:
+                name: top-stocks-cm
+                optional: true

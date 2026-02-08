@@ -47,63 +47,21 @@ def save_list_to_file(stock_list: List[str], filename: str) -> None:
         logger.error(f"Error saving list to file {filename}: {str(e)}")
 
 
-def get_top_500_stocks_by_volume(csv_file_path: str = "/home/ubuntu/app/EQUITY_L.csv") -> List[str]:
+def get_top_500_stocks_from_mount() -> List[str]:
+    mount_path = "/app/data/tickers"
     try:
-        # Read the CSV file
-        logger.info(f"Reading stock symbols from {csv_file_path}")
-        df = pd.read_csv(csv_file_path)
+        logger.info(f"Reading top stocks from mount: {mount_path}")
+        if not os.path.exists(mount_path):
+            logger.warning(f"Mount point {mount_path} does not exist. Falling back to local import.")
+            return []
         
-        # Extract symbols from the first column
-        symbols = df.iloc[:, 0].tolist()  # First column contains SYMBOL
-        logger.info(f"Found {len(symbols)} stock symbols")
-        
-        # Add .ns suffix for NSE stocks
-        nse_symbols = [f"{symbol}.NS" for symbol in symbols]
-        
-        # Dictionary to store volume data
-        volume_data = {}
-        
-        # Fetch volume data for each stock
-        logger.info("Fetching volume data from yfinance...")
-        for i, symbol in enumerate(nse_symbols):
-            try:
-                # Add small delay to avoid rate limiting
-                if i % 10 == 0 and i > 0:
-                    time.sleep(1)
-                # Fetch stock data
-                ticker = yf.Ticker(symbol)
-                hist = ticker.history(period="1d")
-                
-                if not hist.empty and 'Volume' in hist.columns:
-                    volume = hist['Volume'].iloc[-1]  # Get latest volume
-                    if volume > 0:  # Only include stocks with positive volume
-                        volume_data[symbol] = volume
-                
-                # Log progress every 100 stocks
-                if (i + 1) % 100 == 0:
-                    logger.info(f"Processed {i + 1}/{len(nse_symbols)} stocks")
-                    
-            except Exception as e:
-                logger.warning(f"Error fetching data for {symbol}: {str(e)}")
-                continue
-        
-        logger.info(f"Successfully fetched volume data for {len(volume_data)} stocks")
-        
-        # Sort by volume in descending order
-        sorted_stocks = sorted(volume_data.items(), key=lambda x: x[1], reverse=True)
-        
-        # Extract top 500 stock symbols
-        top_500_stocks = [stock[0] for stock in sorted_stocks[:500]]
-        
-        logger.info(f"Returning top {len(top_500_stocks)} stocks by volume")
-        
-        # Save the list to a new Python file
-        save_list_to_file(top_500_stocks, "/home/ubuntu/app/top_500_nse_tickers.py")
-        
-        return top_500_stocks
-        
+        with open(mount_path, 'r') as f:
+            tickers_str = f.read().strip()
+            tickers = tickers_str.split(",") if tickers_str else []
+            logger.info(f"Successfully read {len(tickers)} stocks from mount")
+            return tickers
     except Exception as e:
-        logger.error(f"Error in get_top_500_stocks_by_volume: {str(e)}")
+        logger.error(f"Error reading stocks from mount: {str(e)}")
         return []
 
 def fetch_openai_analysis(url, prompt, retries=3, timeout=240):
@@ -153,10 +111,13 @@ def identify_v4_stocks():
     error_list = []
     ticker_list = []
     
-    # We use top_500_nse_tickers imported in main
-    import top_500_nse_tickers
-    tickers = top_500_nse_tickers.top_500_nse_tickers
+    # Fetch tickers from Mount (ConfigMap)
+    tickers = get_top_500_stocks_from_mount()
     
+    if not tickers:
+        logger.error("No tickers found to scan.")
+        return [[], [], []]
+
     for i, ticker in enumerate(tickers):
         try:
             # v4.3 Optimization: Score >= 6 for high-probability swing
@@ -197,9 +158,6 @@ def perform_market_sentiment_analysis(ticker_list):
     return final_list
 
 if __name__ == "__main__":
-    #_ = get_top_500_stocks_by_volume()
-    import top_500_nse_tickers
-    
     # 1. Fetch BharatQuant v4 Signals (Local Engine) - ONLY V4
     logger.info("Starting BharatQuant v4 Signal Identification...")
     v4_results = identify_v4_stocks()

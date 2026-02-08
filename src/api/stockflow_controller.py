@@ -19,7 +19,6 @@ logging.basicConfig(
     force=True
 )
 logger = logging.getLogger(__name__)
-DEPLOY_TYPE = os.getenv("DEPLOY_TYPE")
 
 try:
     config.load_incluster_config()
@@ -29,8 +28,10 @@ except config.ConfigException:
 v1 = client.BatchV1Api()
 v1_core = client.CoreV1Api()
 v1_core_apps = client.AppsV1Api()
+DEPLOY_TYPE = os.getenv("DEPLOY_TYPE")
+CONFIG_MAP_NAME = "top-stocks-cm"
 stockflow_controller = FastAPI()
-
+NAMESPACE = DEPLOY_TYPE
 if DEPLOY_TYPE != "default":
     DEPLOY_TYPE = "/"+DEPLOY_TYPE
 
@@ -182,6 +183,36 @@ async def trigger_cronjob(dep=Depends(api_key_auth)) -> Dict[str, Any]:
             status_code=500,
             content={"status": "error", "detail": f"Unexpected error: {str(e)}"}
         )
+
+@router.post("/api/admin/top-stocks")
+async def update_top_stocks(data: Dict[str, Any], dep=Depends(api_key_auth)):
+    try:
+        tickers = data.get("tickers", [])
+        if not tickers:
+            raise HTTPException(status_code=400, detail="Tickers list is empty")
+        
+        # Store in ConfigMap for persistence
+        try:
+            configmap = v1_core.read_namespaced_config_map(name=CONFIG_MAP_NAME, namespace=NAMESPACE)
+            configmap.data = {"tickers": ",".join(tickers)}
+            v1_core.patch_namespaced_config_map(name=CONFIG_MAP_NAME, namespace=NAMESPACE, body=configmap)
+        except ApiException as e:
+            if e.status == 404:
+                # Create if not exists
+                cm = client.V1ConfigMap(
+                    metadata=client.V1ObjectMeta(name=CONFIG_MAP_NAME),
+                    data={"tickers": ",".join(tickers)}
+                )
+                v1_core.create_namespaced_config_map(namespace=NAMESPACE, body=cm)
+            else:
+                raise
+        
+        logger.info(f"Successfully updated {len(tickers)} tickers in {CONFIG_MAP_NAME}")
+        return {"status": "success", "count": len(tickers)}
+    except Exception as e:
+        logger.error(f"Error updating top stocks: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 if DEPLOY_TYPE != "default":
     stockflow_controller.include_router(router,prefix=DEPLOY_TYPE)
 else:

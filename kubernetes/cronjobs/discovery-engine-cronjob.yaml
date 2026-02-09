@@ -3,7 +3,7 @@ kind: CronJob
 metadata:
   name: stock-discovery-cronjob
 spec:
-  schedule: "0 7 * * *" # Runs at 7:00 AM everyday
+  schedule: "30 1 * * *" # Runs at 7:00 AM everyday
   jobTemplate:
     spec:
       template:

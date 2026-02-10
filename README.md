@@ -30,7 +30,8 @@ Deploy Workflow
 ### Prerequisites
 - **Kubernetes Cluster** (K3s recommended)
 - **Docker**
-- **Python 3.9+**
+- **Python 3.12+**
+- **jq** (for health checks and scripts)
 - **kubectl** configured for your cluster
 
 ### Installation
@@ -82,6 +83,11 @@ Controlled via the `maintenance-config` ConfigMap. Use the Admin API to toggle.
 - **Externalized Strategy**: Configurable strategy parameters (Interval, Period, Window, StdDev) via Kubernetes Secrets
 - **Health check API**: Health check API to detect status of microservice
 
+### **Discovery Engine**
+- **Batch Processing**: Runs daily at 01:30 UTC to scan the entire NSE equity list.
+- **Volume Analysis**: Identifies top voting stocks based on 1-day volume and updates the `top-stocks-cm` ConfigMap.
+- **Dynamic Updates**: Feeds the "Top 900" list into the Signal Engine for deeper analysis.
+
 ### **StockFlow Controller**
 - **Manual Job Trigger through API**: Administrative API endpoint for triggering manual job from conjob using API call
 - **Maintenance Mode**: Administrative control to enable/disable system maintenance mode, pausing API responses during updates
@@ -108,7 +114,10 @@ Controlled via the `maintenance-config` ConfigMap. Use the Admin API to toggle.
 - **Scheduled Analysis**: Automated cronjobs for regular stock screening with AI validation
 - **Email Notifications**: Rich HTML email alerts containing technical signals and detailed AI sentiment analysis
 - **Health Monitoring**: Automated system health check and status monitoring with email alert on failure
-- **Kubesnap Integration**: Automated snapshot triggering and failure reporting to ![Kubesnap](https://github.com/tekpeek/kubesnap) API on health check failures
+- **External Mesh Integrations**:
+  - **![Kubesnap](https://github.com/tekpeek/kubesnap)**: Automated snapshot triggering on failure.
+  - **![Event-Dispatcher](https://github.com/tekpeek/event-dispatcher)**: Centralized notification service for email alerts.
+  - *Note:* These services are integrated via API calls, creating a mesh-like ecosystem resilience layer.
 
 ### **Deployment & Infrastructure**
 - **Lightweight Kubernetes**: Full K3s deployment with Role based access control

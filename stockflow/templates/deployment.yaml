@@ -17,6 +17,9 @@ spec:
         labels:
           app: {{ $item.name }}
       spec:
+        {{- if $item.serviceAccountName }}
+        serviceAccountName: {{ $item.serviceAccountName }}
+        {{- end }}
         containers:
         - name: {{ $item.name }}
           image: {{ $item.image }}:{{ $item.imageVersion }}

@@ -1,0 +1,23 @@
+{{- range $item := .Values.services}}
+
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ $item.name }}
+spec:
+  schedule: {{ $item.schedule }}
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: {{ $item.name }}
+            image: {{ $item.image }}:{{ $item.imageVersion }}
+            env: {{- include "mychart.renderEnv" $item | nindent 12}}
+            command: {{ $item.command }}
+            volumeMounts: {{- include "mychart.volumeMounts" $item | nindent 12}}
+          restartPolicy: {{ $item.restartPolicy }}
+          volumes: {{- include "mychart.volumes" $item | nindent 12}}
+
+---
+{{- end}}

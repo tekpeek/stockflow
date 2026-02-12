@@ -46,6 +46,25 @@ services:
     ports:
       - name: sc-port
         containerPort: 9000
+  - name: market-intel-engine
+    replicas: 2
+    image: kingaiva/market-intel-engine
+    namespace: dev2
+    imageVersion: stable
+    env:
+      plain:
+        PORT: "8000"
+      secret:
+        - name: OPENAI_API_KEY
+          key: OPENAI_API_KEY
+          secret: api-credentials
+      configmap:
+        - name: MAINTENANCE_STATUS
+          key: status
+          configmap: maintenance-config
+    ports:
+      - name: mie-port
+        containerPort: 8000
 
 # This sets the container image more information can be found here: https://kubernetes.io/docs/concepts/containers/images/
 image:

@@ -7,7 +7,7 @@ metadata:
 spec:
   type : ClusterIP
   selector:
-    app: {{ $item.name }}
+    app: {{ $item.app }}
   ports:
   - name: {{ $item.portName }}
     protocol: TCP

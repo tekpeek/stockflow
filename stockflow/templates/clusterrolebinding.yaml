@@ -1,0 +1,18 @@
+{{- if .Values.clusterrolebindings.enabled }}
+{{- range $item := .Values.clusterrolebindings.data}}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ $item.name }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ $item.role }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ $item.serviceAccount }}
+    namespace: {{ $item.namespace }}
+
+---
+{{- end}}
+{{- end}}

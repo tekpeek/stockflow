@@ -257,7 +257,65 @@ cronjobs:
           configmap: top-stocks-cm
 
 services:
-  
+  - name: market-intel-engine-service
+    app: market-intel-engine
+    port: 8000
+    portName: mie-svc-port
+    targetPort: mie-port
+  - name: signal-engine-service
+    app: signal-engine
+    port: 8000
+    portName: se-svc-port
+    targetPort: se-port
+  - name: sf-ctrl-service
+    app: stockflow-controller
+    port: 8000
+    portName: sc-svc-port
+    targetPort: sc-port
+
+ingress:
+  - name: stockflow-ingress
+    host: tekpeek.duckdns.org
+    namespace: dev2
+    paths:
+      - path: /dev2/api
+        pathType: Prefix
+        backendServiceName: signal-engine-service
+        portNumber: 8000
+      - path: /dev2/api/admin
+        pathType: Prefix
+        backendServiceName: sf-ctrl-service
+        portNumber: 9000
+
+clusterrolebindings:
+  enabled: false
+  data:
+    - name: controller-rolebinding
+      role: controller-role
+      serviceAccount: controller-svc-acc
+      namespace: dev2
+
+serviceaccounts:
+  - name: controller-svc-acc
+    namespace: dev2
+
+clusterroles:
+  enabled: false
+  data: 
+    - name: controller-role
+      rules:
+        - apiGroups: [""]
+          resources: ["pods", "services"]
+          verbs: ["get", "list", "watch"]
+        - apiGroups: [""]
+          resources: ["configmaps"]
+          verbs: ["get", "update", "patch"]
+        - apiGroups: ["apps"]
+          resources: ["deployments"]
+          verbs: ["get", "list", "patch", "update"]
+        - apiGroups: ["batch"]
+          resources: ["cronjobs","jobs"]
+          verbs: ["create","get", "list", "patch"]
 # This sets the container image more information can be found here: https://kubernetes.io/docs/concepts/containers/images/
 image:
   repository: nginx
@@ -310,10 +368,6 @@ service:
   port: 80
 
 # This block is for setting up the ingress for more information can be found here: https://kubernetes.io/docs/concepts/services-networking/ingress/
-ingress:
-  enabled: false
-  className: ""
-  annotations: {}
     # kubernetes.io/ingress.class: nginx
     # kubernetes.io/tls-acme: "true"
   hosts:
@@ -393,19 +447,6 @@ autoscaling:
   maxReplicas: 100
   targetCPUUtilizationPercentage: 80
   # targetMemoryUtilizationPercentage: 80
-
-# Additional volumes on the output Deployment definition.
-volumes: []
-  # - name: foo
-  #   secret:
-  #     secretName: mysecret
-  #     optional: false
-
-# Additional volumeMounts on the output Deployment definition.
-volumeMounts: []
-  # - name: foo
-  #   mountPath: "/etc/foo"
-  #   readOnly: true
 
 nodeSelector: {}
 

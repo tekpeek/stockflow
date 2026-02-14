@@ -41,6 +41,33 @@ Function to replace ports
 {{- end }}
 {{- end }}
 
+{{/*
+Function to replace volumeMounts
+*/}}
+{{- define "mychart.volumeMounts" -}}
+{{- $volumeMounts := .volumeMounts -}}
+{{- range $item := $volumeMounts }}
+- name: {{ $item.name }}
+  mountPath: {{ $item.mountPath }}
+  subPath: {{ $item.subPath }}
+{{- end }}
+{{- end }}
+
+{{/*
+Function to replace volumes
+*/}}
+{{- define "mychart.volumes" -}}
+{{- $volumes := .volumes -}}
+{{- if $volumes.configmap }}
+{{- range $item := $volumes.configmap }}
+- name: {{ $item.name }}
+  configMap:
+    name: {{ $item.configmap }}
+{{- end }}
+{{- end }}
+{{- end }}
+
+
 {{- define "stockflow.fullname" -}}
 {{- if .Values.fullnameOverride }}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}

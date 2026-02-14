@@ -1,4 +1,4 @@
-{{- range $item := .Values.services}}
+{{- range $item := .Values.deployments}}
 
 apiVersion: apps/v1
 kind: Deployment

@@ -1,4 +1,4 @@
-{{- range $item := .Values.services}}
+{{- range $item := .Values.cronjobs}}
 
 apiVersion: batch/v1
 kind: CronJob
@@ -8,13 +8,16 @@ spec:
   schedule: {{ $item.schedule }}
   jobTemplate:
     spec:
+      ttlSecondsAfterFinished: 7200
       template:
         spec:
           containers:
           - name: {{ $item.name }}
             image: {{ $item.image }}:{{ $item.imageVersion }}
-            env: {{- include "mychart.renderEnv" $item | nindent 12}}
-            command: {{ $item.command }}
+            env: {{- include "mychart.renderEnv" $item | nindent 13}}
+            command:
+{{ toYaml $item.command | indent 14 }}
+
             volumeMounts: {{- include "mychart.volumeMounts" $item | nindent 12}}
           restartPolicy: {{ $item.restartPolicy }}
           volumes: {{- include "mychart.volumes" $item | nindent 12}}

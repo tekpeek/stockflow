@@ -14,7 +14,10 @@ spec:
           containers:
           - name: {{ $item.name }}
             image: {{ $item.image }}:{{ $item.imageVersion }}
-            env: {{- include "mychart.renderEnv" $item | nindent 13}}
+            env:
+              - name: DEPLOY_TYPE
+                value: {{ $.Values.namespace }}
+            {{- include "mychart.renderEnv" $item | indent 14}}
             command:
 {{ toYaml $item.command | indent 14 }}
 

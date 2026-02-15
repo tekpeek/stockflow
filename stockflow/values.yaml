@@ -1,9 +1,9 @@
 # Default values for stockflow.
-namespace: dev2
+namespace: "None"
 smtpPassword: "None"
 apiKey: "None"
 openaiApiKey: "None"
-apiPrefix: "/dev2"
+apiPrefix: ""
 
 secrets:
   - name: strategy-config
@@ -28,11 +28,11 @@ configmaps:
       status: "false"
   - name: service-urls
     data:
-      SIGNAL_ENGINE: "http://signal-engine:8000{{ .Values.apiPrefix }}"
-      MARKET_INTEL_ENGINE: "http://market-intel-engine:8000"
-      EVENT_DISPATCHER: "http://event-dispatcher:8000"
-      KUBESNAP: "http://kubesnap:8000"
-      STOCKFLOW_CONTROLLER: "http://stockflow-controller:9000{{ .Values.apiPrefix }}"
+      SIGNAL_ENGINE: "http://signal-engine-service:8000{{ .Values.apiPrefix }}"
+      MARKET_INTEL_ENGINE: "http://market-intel-engine-service:8000"
+      EVENT_DISPATCHER: "http://event-dispatcher-service:8000"
+      KUBESNAP: "http://kubesnap-service.kubesnap.svc.cluster.local:9001"
+      STOCKFLOW_CONTROLLER: "http://sf-ctrl-service:9000{{ .Values.apiPrefix }}"
   - name: cronjob-config
     files:
       - name: discovery-engine.py
@@ -55,7 +55,6 @@ deployments:
     env:
       plain:
         PORT: "8000"
-        DEPLOY_TYPE: __DEPLOY_TYPE__
       secret:
         - name: INTERVAL
           key: interval
@@ -85,7 +84,6 @@ deployments:
     env:
       plain:
         PORT: "9000"
-        DEPLOY_TYPE: __DEPLOY_TYPE__
       secret:
         - name: SF_API_KEY
           key: api-key
@@ -154,8 +152,6 @@ cronjobs:
     command: ["/bin/bash", "-c", "python3 /home/ubuntu/app/healthcheck-execution.py"]
     ttlSecondsAfterFinished: 7200
     env:
-      plain:
-        DEPLOY_TYPE: __DEPLOY_TYPE__
       secret:
         - name: SMTP_HOST
           key: smtp-host
@@ -203,8 +199,6 @@ cronjobs:
     command: ["/bin/bash", "-c", "python3 /home/ubuntu/app/cronjob-execution.py"]
     ttlSecondsAfterFinished: 7200
     env:
-      plain:
-        DEPLOY_TYPE: __DEPLOY_TYPE__
       secret:
         - name: SMTP_HOST
           key: smtp-host
@@ -275,7 +269,7 @@ services:
     targetPort: se-port
   - name: sf-ctrl-service
     app: stockflow-controller
-    port: 8000
+    port: 9000
     portName: sc-svc-port
     targetPort: sc-port
 
@@ -294,7 +288,7 @@ ingress:
         portNumber: 9000
 
 clusterrolebindings:
-  enabled: false
+  enabled: true
   data:
     - name: controller-rolebinding
       role: controller-role

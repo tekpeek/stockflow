@@ -12,7 +12,7 @@ data:
   {{- end }}
 {{- else }}
   {{- range $key, $value := $item.data }}
-  {{ $key }}: {{ $value | quote }}
+  {{ $key }}: {{ tpl $value $ | quote }}
   {{- end }}
 {{- end }}
 

@@ -14,7 +14,7 @@ spec:
       http:
         paths:
         {{-  range $path := $item.paths }}
-          - path: {{ $path.path }}
+          - path: {{ tpl $path.path $ }}
             pathType: {{ $path.pathType }}
             backend:
               service:

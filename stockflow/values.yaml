@@ -1,4 +1,10 @@
 # Default values for stockflow.
+namespace: dev2
+smtpPassword: "None"
+apiKey: "None"
+openaiApiKey: "None"
+apiPrefix: "/dev2"
+
 secrets:
   - name: strategy-config
     data:
@@ -8,13 +14,13 @@ secrets:
       num_std: "2"
   - name: api-credentials
     data:
-      api-key: "[API_KEY]"
-      OPENAI_API_KEY: "[OPENAI_API_KEY]"
+      api-key: "{{ .Values.apiKey }}"
+      OPENAI_API_KEY: "{{ .Values.openaiApiKey }}"
   - name: smtp-credentials
     data:
       smtp-host: "smtp.gmail.com"
       smtp-port: "587"
-      smtp-password: "[SMTP_PASSWORD]"
+      smtp-password: "{{ .Values.smtpPassword }}"
 
 configmaps:
   - name: maintenance-config
@@ -22,11 +28,11 @@ configmaps:
       status: "false"
   - name: service-urls
     data:
-      SIGNAL_ENGINE: "http://signal-engine:8000"
+      SIGNAL_ENGINE: "http://signal-engine:8000{{ .Values.apiPrefix }}"
       MARKET_INTEL_ENGINE: "http://market-intel-engine:8000"
       EVENT_DISPATCHER: "http://event-dispatcher:8000"
       KUBESNAP: "http://kubesnap:8000"
-      STOCKFLOW_CONTROLLER: "http://stockflow-controller:9000"
+      STOCKFLOW_CONTROLLER: "http://stockflow-controller:9000{{ .Values.apiPrefix }}"
   - name: cronjob-config
     files:
       - name: discovery-engine.py
@@ -278,11 +284,11 @@ ingress:
     host: tekpeek.duckdns.org
     namespace: dev2
     paths:
-      - path: /dev2/api
+      - path: "{{ .Values.apiPrefix }}/api"
         pathType: Prefix
         backendServiceName: signal-engine-service
         portNumber: 8000
-      - path: /dev2/api/admin
+      - path: "{{ .Values.apiPrefix }}/api/admin"
         pathType: Prefix
         backendServiceName: sf-ctrl-service
         portNumber: 9000

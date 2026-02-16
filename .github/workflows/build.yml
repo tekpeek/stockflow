@@ -1,6 +1,7 @@
 ---
 name: build-image-and-push
 on:
+  push:
   workflow_dispatch:
     inputs:
       image-version:
@@ -10,7 +11,7 @@ on:
       namespace:
         description: 'Namespace to deploy to'
         required: true
-        default: 'stable'
+        default: 'default'
     
 jobs:
   build:
@@ -32,7 +33,7 @@ jobs:
        context:
        file: ./dockerfiles/Dockerfile.signal-engine
        push: true
-       tags: kingaiva/signal-engine:${{ inputs.image-version }}
+       tags: kingaiva/signal-engine:${{ inputs.image-version || 'dev' }}
     
     - name: Build and push stockflow-controller
       uses: docker/build-push-action@v5
@@ -40,7 +41,7 @@ jobs:
        context:
        file: ./dockerfiles/Dockerfile.stockflow-controller
        push: true
-       tags: kingaiva/stockflow-controller:${{ inputs.image-version }}
+       tags: kingaiva/stockflow-controller:${{ inputs.image-version || 'dev' }}
 
     - name: Build and push market-intel-engine
       uses: docker/build-push-action@v5
@@ -48,13 +49,13 @@ jobs:
        context:
        file: ./dockerfiles/Dockerfile.market-intel-engine
        push: true
-       tags: kingaiva/market-intel-engine:${{ inputs.image-version }}
+       tags: kingaiva/market-intel-engine:${{ inputs.image-version || 'dev' }}
 
   deploy:
     needs: build
     uses: ./.github/workflows/deploy-stockflow.yml
     with:
-      namespace: ${{ inputs.namespace }}
+      namespace: ${{ inputs.namespace || 'dev' }}
     secrets: inherit
   
   test:

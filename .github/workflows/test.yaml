@@ -1,15 +1,9 @@
 ---
 name: test-deployment
 on:
-  workflow_dispatch:
   workflow_call:
-  workflow_run:
-    workflows:
-      - deploy-stockflow
-    types:
-      - completed
 jobs:
- build:
+  test:
    name: test-deployment
    runs-on: self-hosted
    steps:

@@ -1,7 +1,7 @@
 ---
 name: build-image-and-push
 on:
-  workflow_dispatch:
+  workflow_call:
   inputs:
     image-version:
       description: 'Version of the image to build'

@@ -1,7 +1,7 @@
 ---
 name: deploy-stockflow
 on:
-  workflow_dispatch:
+  workflow_call:
   inputs:
     namespace:
       description: 'Namespace to deploy to'

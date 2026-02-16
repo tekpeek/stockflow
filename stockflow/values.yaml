@@ -42,9 +42,6 @@ configmaps:
       - name: smtp_email_trigger.py
       - name: market_analysis_prompt.txt
       - name: email-template.html
-  - name: top-stocks-cm
-    data:
-      tickers: ""
     
 deployments:
   - name: signal-engine

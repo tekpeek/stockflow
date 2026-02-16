@@ -1,6 +1,7 @@
 # Default values for stockflow.
 namespace: "None"
 smtpPassword: "None"
+imageVersion: "dev"
 apiKey: "None"
 openaiApiKey: "None"
 apiPrefix: ""

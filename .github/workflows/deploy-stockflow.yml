@@ -6,12 +6,14 @@ on:
       namespace:
         description: 'Namespace to deploy to'
         required: true
+        default: 'stable'
+  workflow_call:
+    inputs:
+      namespace:
+        description: 'Namespace to deploy to'
+        required: true
+        type: string
         default: 'dev'
-  workflow_run:
-    workflows:
-      - build-image-and-push
-    types:
-      - completed
 jobs:
  build:
    name: deploy-stockflow

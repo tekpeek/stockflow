@@ -7,6 +7,10 @@ on:
         description: 'Version of the image to build'
         required: true
         default: 'stable'
+      namespace:
+        description: 'Namespace to deploy to'
+        required: true
+        default: 'stable'
     
 jobs:
   build:
@@ -45,3 +49,14 @@ jobs:
        file: ./dockerfiles/Dockerfile.market-intel-engine
        push: true
        tags: kingaiva/market-intel-engine:${{ inputs.image-version }}
+
+  deploy:
+    needs: build
+    uses: ./.github/workflows/deploy-stockflow.yml
+    with:
+      namespace: ${{ inputs.namespace }}
+    secrets: inherit
+  
+  test:
+    needs: deploy
+    uses: ./.github/workflows/test.yml

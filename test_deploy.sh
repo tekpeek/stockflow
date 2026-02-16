@@ -6,8 +6,17 @@ log_message(){
     echo "[$time]----[$type]---- $message"
 }
 
+export namespace=$1
+
+if [[ "$namespace" == "default" ]]; then
+    log_message "INFO" "Namespace is default"
+    export url="https://tekpeek.duckdns.org"
+else
+    log_message "INFO" "Namespace is $namespace"
+    export url="https://tekpeek.duckdns.org/$namespace"
+fi
 # Health Status check for public facing services
-signal_engine_health=$(curl -s -X GET https://tekpeek.duckdns.org/api/health | jq -r .status)
+signal_engine_health=$(curl -s -X GET $url/api/health | jq -r .status)
 if [[ "$signal_engine_health" != "OK" ]]; then
     log_message "ERROR" "Health Check API not working for Signal Engine!"
     exit 1
@@ -15,7 +24,7 @@ else
     log_message "INFO" "Signal Engine Status : $signal_engine_health"
 fi
 
-stockflow_controller_health=$(curl -s -X GET https://tekpeek.duckdns.org/api/admin/health | jq -r .status)
+stockflow_controller_health=$(curl -s -X GET $url/api/admin/health | jq -r .status)
 if [[ "$stockflow_controller_health" != "OK" ]]; then
     log_message "ERROR" "Health Check API not working for Stockflow Controller!"
     exit 1
@@ -24,7 +33,7 @@ else
 fi
 
 # Dummy Signal Generation Test
-dummy_signal=$(curl -s -X GET https://tekpeek.duckdns.org/api/RELIANCE.NS | jq -r .buy)
+dummy_signal=$(curl -s -X GET $url/api/RELIANCE.NS | jq -r .buy)
 if [[ "$dummy_signal" != "true" ]] && [[ "$dummy_signal" != "false" ]]; then
     log_message "ERROR" "API Error! Endpoint [/api] not working."
     exit 1
@@ -33,7 +42,7 @@ else
 fi
 
 # Maintenance API Check
-maintenance_status=$(curl -s -X GET https://tekpeek.duckdns.org/api/admin/maintenance/status | jq -r .status)
+maintenance_status=$(curl -s -X GET $url/api/admin/maintenance/status | jq -r .status)
 if [[ "$maintenance_status" != "on" ]] && [[ "$maintenance_status" != "off" ]]; then
     log_message "ERROR" "API Error! Endpoint [/api/admin/maintenance/status] not working."
     exit 1

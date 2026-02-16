@@ -1,5 +1,7 @@
 #!/bin/bash
+ls -al
 rm -rf files/*
+mkdir -p files
 cp -r ../src/core/*.py files/
 cp ../src/prompts/market_analysis_prompt.txt files/market_analysis_prompt.txt
 cp ../templates/email-template.html files/email-template.html

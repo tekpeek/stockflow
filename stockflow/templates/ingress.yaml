@@ -1,0 +1,31 @@
+{{- range $item := .Values.ingress }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ $item.name }}
+  namespace: {{ $.Values.namespace }}
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+    traefik.ingress.kubernetes.io/router.tls.certresolver: default
+spec:
+  rules:
+    - host: {{ $item.host }}
+      http:
+        paths:
+        {{-  range $path := $item.paths }}
+          - path: {{ tpl $path.path $ }}
+            pathType: {{ $path.pathType }}
+            backend:
+              service:
+                name: {{ $path.backendServiceName }}
+                port:
+                  number: {{ $path.portNumber }}
+        {{- end }}
+  tls:
+    - hosts:
+        - {{ $item.host }}
+
+---
+{{- end }}
+

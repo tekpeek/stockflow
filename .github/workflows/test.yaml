@@ -1,14 +1,15 @@
 ---
 name: test-deployment
 on:
-  workflow_dispatch:
-  workflow_run:
-    workflows:
-      - deploy-stockflow
-    types:
-      - completed
+  workflow_call:
+    inputs:
+      namespace:
+        description: 'Namespace to deploy to'
+        required: true
+        type: string
+        default: 'dev'
 jobs:
- build:
+  test:
    name: test-deployment
    runs-on: self-hosted
    steps:
@@ -17,4 +18,4 @@ jobs:
  
    - name: test-services
      run: |
-       bash test_deploy.sh
+       bash test_deploy.sh "${{ inputs.namespace || 'dev' }}"

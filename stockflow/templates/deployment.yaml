@@ -1,0 +1,34 @@
+{{- range $item := .Values.deployments}}
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $item.name }}
+  namespace: {{ $.Values.namespace }}
+  labels:
+    app: {{ $item.name }}
+spec:
+    replicas: {{ $item.replicas }}
+    selector:
+      matchLabels:
+        app: {{ $item.name }}
+    template:
+      metadata:
+        labels:
+          app: {{ $item.name }}
+      spec:
+        {{- if $item.serviceAccountName }}
+        serviceAccountName: {{ $item.serviceAccountName }}
+        {{- end }}
+        containers:
+        - name: {{ $item.name }}
+          image: {{ $item.image }}:{{ $.Values.imageVersion }}
+          env:
+          - name: DEPLOY_TYPE
+            value: {{ $.Values.namespace }}
+          {{- include "mychart.renderEnv" $item | nindent 10}}
+          imagePullPolicy: Always
+          ports: {{- include "mychart.renderPorts" $item | nindent 12}}
+
+---
+{{- end}}

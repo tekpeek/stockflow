@@ -1,14 +1,20 @@
 ---
 name: deploy-stockflow
 on:
-  workflow_dispatch:
-  workflow_run:
-    workflows:
-      - build-image-and-push
-    types:
-      - completed
+  workflow_call:
+    inputs:
+      namespace:
+        description: 'Namespace to deploy to'
+        required: true
+        type: string
+        default: 'dev'
+      image-version:
+        description: 'Image version to deploy'
+        required: true
+        type: string
+        default: 'dev'
 jobs:
- build:
+  deploy:
    name: deploy-stockflow
    runs-on: self-hosted
    steps:
@@ -21,4 +27,4 @@ jobs:
        SF_API_KEY: ${{ secrets.SF_API_KEY }}
        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
      run: |
-       bash deploy_project.sh
+       cd stockflow/ && bash deploy_helm.sh "${{ secrets.OPENAI_API_KEY }}" "${{ secrets.SMTP_PASSWORD }}" "${{ secrets.SF_API_KEY }}" "${{ inputs.namespace || 'dev' }}" "${{ inputs.image-version || 'dev' }}"

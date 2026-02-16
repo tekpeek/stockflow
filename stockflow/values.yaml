@@ -1,0 +1,453 @@
+# Default values for stockflow.
+namespace: "None"
+smtpPassword: "None"
+imageVersion: "dev"
+apiKey: "None"
+openaiApiKey: "None"
+apiPrefix: ""
+
+secrets:
+  - name: strategy-config
+    data:
+      interval: "1d"
+      period: "14"
+      window: "20"
+      num_std: "2"
+  - name: api-credentials
+    data:
+      api-key: "{{ .Values.apiKey }}"
+      OPENAI_API_KEY: "{{ .Values.openaiApiKey }}"
+  - name: smtp-credentials
+    data:
+      smtp-host: "smtp.gmail.com"
+      smtp-port: "587"
+      smtp-password: "{{ .Values.smtpPassword }}"
+
+configmaps:
+  - name: maintenance-config
+    data:
+      status: "false"
+  - name: service-urls
+    data:
+      SIGNAL_ENGINE: "http://signal-engine-service:8000{{ .Values.apiPrefix }}"
+      MARKET_INTEL_ENGINE: "http://market-intel-engine-service:8000"
+      EVENT_DISPATCHER: "http://event-dispatcher-service:8000"
+      KUBESNAP: "http://kubesnap-service.kubesnap.svc.cluster.local:9001"
+      STOCKFLOW_CONTROLLER: "http://sf-ctrl-service:9000{{ .Values.apiPrefix }}"
+  - name: cronjob-config
+    files:
+      - name: discovery-engine.py
+      - name: healthcheck-execution.py
+      - name: cronjob-execution.py
+      - name: EQUITY_L.csv
+      - name: smtp_email_trigger.py
+      - name: market_analysis_prompt.txt
+      - name: email-template.html
+    
+deployments:
+  - name: signal-engine
+    replicas: 2
+    image: kingaiva/signal-engine
+    namespace: dev2
+    imageVersion: stable
+    env:
+      plain:
+        PORT: "8000"
+      secret:
+        - name: INTERVAL
+          key: interval
+          secret: strategy-config
+        - name: PERIOD
+          key: period
+          secret: strategy-config
+        - name: WINDOW
+          key: window
+          secret: strategy-config
+        - name: NUM_STD
+          key: num_std
+          secret: strategy-config
+      configmap:
+        - name: MAINTENANCE_STATUS
+          key: status
+          configmap: maintenance-config
+    ports:
+      - name: se-port
+        containerPort: 8000
+  - name: stockflow-controller
+    replicas: 2
+    image: kingaiva/stockflow-controller
+    namespace: dev2
+    imageVersion: stable
+    serviceAccountName: controller-svc-acc
+    env:
+      plain:
+        PORT: "9000"
+      secret:
+        - name: SF_API_KEY
+          key: api-key
+          secret: api-credentials
+    ports:
+      - name: sc-port
+        containerPort: 9000
+  - name: market-intel-engine
+    replicas: 2
+    image: kingaiva/market-intel-engine
+    namespace: dev2
+    imageVersion: stable
+    env:
+      plain:
+        PORT: "8000"
+      secret:
+        - name: OPENAI_API_KEY
+          key: OPENAI_API_KEY
+          secret: api-credentials
+      configmap:
+        - name: MAINTENANCE_STATUS
+          key: status
+          configmap: maintenance-config
+    ports:
+      - name: mie-port
+        containerPort: 8000
+
+# Cronjobs
+cronjobs:
+  - name: discovery-engine
+    schedule: "30 1 * * *" 
+    image: kingaiva/signal-engine
+    imageVersion: stable
+    namespace: dev2
+    restartPolicy: OnFailure
+    command: ["/bin/bash", "-c", "python3 /home/ubuntu/app/discovery-engine.py"]
+    env:
+      plain:
+        EQUITY_CSV_PATH: "/home/ubuntu/app/EQUITY_L.csv"
+      secret:
+        - name: SF_API_KEY
+          key: api-key
+          secret: api-credentials
+      configmap:
+        - name: STOCKFLOW_CONTROLLER
+          key: STOCKFLOW_CONTROLLER
+          configmap: service-urls
+    volumeMounts:
+      - name: cronjob-config-volume
+        mountPath: /home/ubuntu/app/discovery-engine.py
+        subPath: discovery-engine.py
+      - name: cronjob-config-volume
+        mountPath: /home/ubuntu/app/EQUITY_L.csv
+        subPath: EQUITY_L.csv
+    volumes:
+      configmap:
+        - name: cronjob-config-volume
+          configmap: cronjob-config
+  ###
+  - name: health-check
+    schedule: "0 * * * *" 
+    image: kingaiva/signal-engine
+    imageVersion: stable
+    namespace: dev2
+    restartPolicy: OnFailure
+    command: ["/bin/bash", "-c", "python3 /home/ubuntu/app/healthcheck-execution.py"]
+    ttlSecondsAfterFinished: 7200
+    env:
+      secret:
+        - name: SMTP_HOST
+          key: smtp-host
+          secret: smtp-credentials
+        - name: SMTP_PORT
+          key: smtp-port
+          secret: smtp-credentials
+        - name: SMTP_PASSWORD
+          key: smtp-password
+          secret: smtp-credentials
+        - name: API_KEY
+          key: api-key
+          secret: api-credentials
+      configmap:
+        - name: SIGNAL_ENGINE
+          key: SIGNAL_ENGINE
+          configmap: service-urls
+        - name: MARKET_INTEL_ENGINE
+          key: MARKET_INTEL_ENGINE
+          configmap: service-urls
+        - name: EVENT_DISPATCHER
+          key: EVENT_DISPATCHER
+          configmap: service-urls
+        - name: KUBESNAP
+          key: KUBESNAP
+          configmap: service-urls
+        - name: STOCKFLOW_CONTROLLER
+          key: STOCKFLOW_CONTROLLER
+          configmap: service-urls
+    volumeMounts:
+      - name: cronjob-config-volume
+        mountPath: /home/ubuntu/app/healthcheck-execution.py
+        subPath: healthcheck-execution.py
+    volumes:
+      configmap:
+        - name: cronjob-config-volume
+          configmap: cronjob-config
+  ###
+  - name: signal-check-cronjob
+    schedule: "30 2 * * 1,2,3,4,5" 
+    image: kingaiva/signal-engine
+    imageVersion: stable
+    namespace: dev2
+    restartPolicy: OnFailure
+    command: ["/bin/bash", "-c", "python3 /home/ubuntu/app/cronjob-execution.py"]
+    ttlSecondsAfterFinished: 7200
+    env:
+      secret:
+        - name: SMTP_HOST
+          key: smtp-host
+          secret: smtp-credentials
+        - name: SMTP_PORT
+          key: smtp-port
+          secret: smtp-credentials
+        - name: SMTP_PASSWORD
+          key: smtp-password
+          secret: smtp-credentials
+        - name: API_KEY
+          key: api-key
+          secret: api-credentials
+        - name: SF_API_KEY
+          key: api-key
+          secret: api-credentials
+      configmap:
+        - name: SIGNAL_ENGINE
+          key: SIGNAL_ENGINE
+          configmap: service-urls
+        - name: MARKET_INTEL_ENGINE
+          key: MARKET_INTEL_ENGINE
+          configmap: service-urls
+        - name: EVENT_DISPATCHER
+          key: EVENT_DISPATCHER
+          configmap: service-urls
+        - name: STOCKFLOW_CONTROLLER
+          key: STOCKFLOW_CONTROLLER
+          configmap: service-urls
+    volumeMounts:
+      - name: cronjob-config-volume
+        mountPath: /home/ubuntu/app/cronjob-execution.py
+        subPath: cronjob-execution.py
+      - name: cronjob-config-volume
+        mountPath: /home/ubuntu/app/EQUITY_L.csv
+        subPath: EQUITY_L.csv
+      - name: cronjob-config-volume
+        mountPath: /home/ubuntu/app/smtp_email_trigger.py
+        subPath: smtp_email_trigger.py
+      - name: cronjob-config-volume
+        mountPath: /home/ubuntu/app/market_analysis_prompt.txt
+        subPath: market_analysis_prompt.txt
+      - name: cronjob-config-volume
+        mountPath: /home/ubuntu/app/email-template.html
+        subPath: email-template.html
+      - name: cronjob-config-volume
+        mountPath: /home/ubuntu/app/top_500_nse_tickers.py
+        subPath: top_500_nse_tickers.py
+      - name: top-stocks-volume
+        mountPath: /app/data
+    volumes:
+      configmap:
+        - name: cronjob-config-volume
+          configmap: cronjob-config
+        - name: top-stocks-volume
+          configmap: top-stocks-cm
+
+services:
+  - name: market-intel-engine-service
+    app: market-intel-engine
+    port: 8000
+    portName: mie-svc-port
+    targetPort: mie-port
+  - name: signal-engine-service
+    app: signal-engine
+    port: 8000
+    portName: se-svc-port
+    targetPort: se-port
+  - name: sf-ctrl-service
+    app: stockflow-controller
+    port: 9000
+    portName: sc-svc-port
+    targetPort: sc-port
+
+ingress:
+  - name: stockflow-ingress
+    host: tekpeek.duckdns.org
+    namespace: dev2
+    paths:
+      - path: "{{ .Values.apiPrefix }}/api"
+        pathType: Prefix
+        backendServiceName: signal-engine-service
+        portNumber: 8000
+      - path: "{{ .Values.apiPrefix }}/api/admin"
+        pathType: Prefix
+        backendServiceName: sf-ctrl-service
+        portNumber: 9000
+
+clusterrolebindings:
+  enabled: true
+  data:
+    - name: controller-rolebinding
+      role: controller-role
+      serviceAccount: controller-svc-acc
+      namespace: dev2
+
+serviceaccounts:
+  - name: controller-svc-acc
+    namespace: dev2
+
+clusterroles:
+  enabled: false
+  data: 
+    - name: controller-role
+      rules:
+        - apiGroups: [""]
+          resources: ["pods", "services"]
+          verbs: ["get", "list", "watch"]
+        - apiGroups: [""]
+          resources: ["configmaps"]
+          verbs: ["get", "update", "patch"]
+        - apiGroups: ["apps"]
+          resources: ["deployments"]
+          verbs: ["get", "list", "patch", "update"]
+        - apiGroups: ["batch"]
+          resources: ["cronjobs","jobs"]
+          verbs: ["create","get", "list", "patch"]
+# This sets the container image more information can be found here: https://kubernetes.io/docs/concepts/containers/images/
+image:
+  repository: nginx
+  # This sets the pull policy for images.
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: ""
+
+# This is for the secrets for pulling an image from a private repository more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
+imagePullSecrets: []
+# This is to override the chart name.
+nameOverride: ""
+fullnameOverride: ""
+
+# This section builds out the service account more information can be found here: https://kubernetes.io/docs/concepts/security/service-accounts/
+serviceAccount:
+  # Specifies whether a service account should be created.
+  create: true
+  # Automatically mount a ServiceAccount's API credentials?
+  automount: true
+  # Annotations to add to the service account.
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template.
+  name: ""
+
+# This is for setting Kubernetes Annotations to a Pod.
+# For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
+podAnnotations: {}
+# This is for setting Kubernetes Labels to a Pod.
+# For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
+podLabels: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+# This is for setting up a service more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/
+service:
+  # This sets the service type more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
+  type: ClusterIP
+  # This sets the ports more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#field-spec-ports
+  port: 80
+
+# This block is for setting up the ingress for more information can be found here: https://kubernetes.io/docs/concepts/services-networking/ingress/
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: chart-example.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+    # - secretName: chart-example-tls
+    #   hosts:
+    #     - chart-example.local
+
+# -- Expose the service via gateway-api HTTPRoute
+# Requires Gateway API resources and suitable controller installed within the cluster
+# (see: https://gateway-api.sigs.k8s.io/guides/)
+httpRoute:
+  # HTTPRoute enabled.
+  enabled: false
+  # HTTPRoute annotations.
+  annotations: {}
+  # Which Gateways this Route is attached to.
+  parentRefs:
+  - name: gateway
+    sectionName: http
+    # namespace: default
+  # Hostnames matching HTTP header.
+  hostnames:
+  - chart-example.local
+  # List of rules and filters applied.
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /headers
+  #   filters:
+  #   - type: RequestHeaderModifier
+  #     requestHeaderModifier:
+  #       set:
+  #       - name: My-Overwrite-Header
+  #         value: this-is-the-only-value
+  #       remove:
+  #       - User-Agent
+  # - matches:
+  #   - path:
+  #       type: PathPrefix
+  #       value: /echo
+  #     headers:
+  #     - name: version
+  #       value: v2
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+# This is to setup the liveness and readiness probes more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
+livenessProbe:
+  httpGet:
+    path: /
+    port: http
+readinessProbe:
+  httpGet:
+    path: /
+    port: http
+
+# This section is for setting up autoscaling more information can be found here: https://kubernetes.io/docs/concepts/workloads/autoscaling/
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

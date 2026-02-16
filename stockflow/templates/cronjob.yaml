@@ -1,0 +1,29 @@
+{{- range $item := .Values.cronjobs}}
+
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ $item.name }}
+spec:
+  schedule: {{ $item.schedule }}
+  jobTemplate:
+    spec:
+      ttlSecondsAfterFinished: 7200
+      template:
+        spec:
+          containers:
+          - name: {{ $item.name }}
+            image: {{ $item.image }}:{{ $item.imageVersion }}
+            env:
+              - name: DEPLOY_TYPE
+                value: {{ $.Values.namespace }}
+            {{- include "mychart.renderEnv" $item | indent 14}}
+            command:
+{{ toYaml $item.command | indent 14 }}
+
+            volumeMounts: {{- include "mychart.volumeMounts" $item | nindent 12}}
+          restartPolicy: {{ $item.restartPolicy }}
+          volumes: {{- include "mychart.volumes" $item | nindent 12}}
+
+---
+{{- end}}

@@ -1,0 +1,16 @@
+{{- if .Values.clusterroles.enabled }}
+{{- range $item := .Values.clusterroles.data}}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ $item.name }}
+rules:
+  {{- range $rule := $item.rules }}
+  - apiGroups: {{ $rule.apiGroups | toJson }}
+    resources: {{ $rule.resources | toJson }}
+    verbs: {{ $rule.verbs | toJson }}
+{{- end }}
+
+---
+{{- end}}
+{{- end}}

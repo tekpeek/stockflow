@@ -1,9 +1,9 @@
 #!/bin/bash
 rm -rf files/*
-cp -r ../src/core/*.py ./files/
-cp ../src/prompts/market_analysis_prompt.txt ./files/market_analysis_prompt.txt
-cp ../templates/email-template.html ./files/email-template.html
-cp ../update_tickers/EQUITY_L.csv ./files/EQUITY_L.csv
+cp -r ../src/core/*.py files/
+cp ../src/prompts/market_analysis_prompt.txt files/market_analysis_prompt.txt
+cp ../templates/email-template.html files/email-template.html
+cp ../update_tickers/EQUITY_L.csv files/EQUITY_L.csv
 
 export OPENAI_API_KEY=$1
 export SMTP_PASSWORD=$2
@@ -27,7 +27,7 @@ else
         --set apiPrefix="/$NAMESPACE"
 fi
 
-rm -r files/*
+rm -rf files/
 
 
 # Execution command

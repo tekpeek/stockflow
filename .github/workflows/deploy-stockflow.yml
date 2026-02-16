@@ -2,6 +2,11 @@
 name: deploy-stockflow
 on:
   workflow_dispatch:
+  inputs:
+    namespace:
+      description: 'Namespace to deploy to'
+      required: true
+      default: 'dev'
   workflow_run:
     workflows:
       - build-image-and-push
@@ -21,4 +26,4 @@ jobs:
        SF_API_KEY: ${{ secrets.SF_API_KEY }}
        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
      run: |
-       bash deploy_project.sh
+       cd stockflow/ && bash deploy_helm.sh "${{ secrets.OPENAI_API_KEY }}" "${{ secrets.SMTP_PASSWORD }}" "${{ secrets.SF_API_KEY }}" "${{ inputs.namespace }}"

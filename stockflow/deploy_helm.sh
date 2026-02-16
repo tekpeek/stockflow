@@ -34,7 +34,7 @@ log_message "INFO" "Linting helm chart completed."
 if [ "$NAMESPACE" == "default" ]; then
     helm upgrade stockflow --install . -n $NAMESPACE \
         --set openaiApiKey=$OPENAI_API_KEY \
-        --set smtpPassword=$SMTP_PASSWORD \
+        --set smtpPassword="$SMTP_PASSWORD" \
         --set apiKey=$API_KEY \
         --set namespace=$NAMESPACE \
         --set imageVersion=$IMAGE_VERSION

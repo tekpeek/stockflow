@@ -6,11 +6,11 @@ on:
     inputs:
       image-version:
         description: 'Version of the image to build'
-        required: false
+        required: true
         default: 'stable'
       namespace:
         description: 'Namespace to deploy to'
-        required: false
+        required: true
         default: 'default'
     
 jobs:

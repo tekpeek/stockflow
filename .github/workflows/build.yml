@@ -1,12 +1,12 @@
 ---
 name: build-image-and-push
 on:
-  workflow_call:
-  inputs:
-    image-version:
-      description: 'Version of the image to build'
-      required: true
-      default: 'stable'
+  workflow_dispatch:
+    inputs:
+      image-version:
+        description: 'Version of the image to build'
+        required: true
+        default: 'stable'
     
 jobs:
   build:

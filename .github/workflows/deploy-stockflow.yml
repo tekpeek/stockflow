@@ -1,12 +1,12 @@
 ---
 name: deploy-stockflow
 on:
-  workflow_call:
-  inputs:
-    namespace:
-      description: 'Namespace to deploy to'
-      required: true
-      default: 'dev'
+  workflow_dispatch:
+    inputs:
+      namespace:
+        description: 'Namespace to deploy to'
+        required: true
+        default: 'dev'
   workflow_run:
     workflows:
       - build-image-and-push

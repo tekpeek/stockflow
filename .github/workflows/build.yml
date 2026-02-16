@@ -59,4 +59,4 @@ jobs:
   
   test:
     needs: deploy
-    uses: ./.github/workflows/test.yml
+    uses: ./.github/workflows/test.yaml

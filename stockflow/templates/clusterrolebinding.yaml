@@ -7,10 +7,10 @@ metadata:
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: {{ $item.role }}
+  name: {{ $item.role }}-{{ $.Values.namespace }}
 subjects:
   - kind: ServiceAccount
-    name: {{ $item.serviceAccount }}
+    name: {{ $item.serviceAccount }}-{{ $.Values.namespace }}
     namespace: {{ $.Values.namespace }}
 
 ---

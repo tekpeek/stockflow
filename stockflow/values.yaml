@@ -48,7 +48,6 @@ deployments:
   - name: signal-engine
     replicas: 2
     image: kingaiva/signal-engine
-    namespace: dev2
     imageVersion: stable
     env:
       plain:
@@ -76,7 +75,6 @@ deployments:
   - name: stockflow-controller
     replicas: 2
     image: kingaiva/stockflow-controller
-    namespace: dev2
     imageVersion: stable
     serviceAccountName: controller-svc-acc
     env:
@@ -92,7 +90,6 @@ deployments:
   - name: market-intel-engine
     replicas: 2
     image: kingaiva/market-intel-engine
-    namespace: dev2
     imageVersion: stable
     env:
       plain:
@@ -115,7 +112,6 @@ cronjobs:
     schedule: "30 1 * * *" 
     image: kingaiva/signal-engine
     imageVersion: stable
-    namespace: dev2
     restartPolicy: OnFailure
     command: ["/bin/bash", "-c", "python3 /home/ubuntu/app/discovery-engine.py"]
     env:
@@ -145,7 +141,6 @@ cronjobs:
     schedule: "0 * * * *" 
     image: kingaiva/signal-engine
     imageVersion: stable
-    namespace: dev2
     restartPolicy: OnFailure
     command: ["/bin/bash", "-c", "python3 /home/ubuntu/app/healthcheck-execution.py"]
     ttlSecondsAfterFinished: 7200
@@ -192,7 +187,6 @@ cronjobs:
     schedule: "30 2 * * 1,2,3,4,5" 
     image: kingaiva/signal-engine
     imageVersion: stable
-    namespace: dev2
     restartPolicy: OnFailure
     command: ["/bin/bash", "-c", "python3 /home/ubuntu/app/cronjob-execution.py"]
     ttlSecondsAfterFinished: 7200
@@ -274,7 +268,6 @@ services:
 ingress:
   - name: stockflow-ingress
     host: tekpeek.duckdns.org
-    namespace: dev2
     paths:
       - path: "{{ .Values.apiPrefix }}/api"
         pathType: Prefix
@@ -291,14 +284,12 @@ clusterrolebindings:
     - name: controller-rolebinding
       role: controller-role
       serviceAccount: controller-svc-acc
-      namespace: dev2
 
 serviceaccounts:
   - name: controller-svc-acc
-    namespace: dev2
 
 clusterroles:
-  enabled: false
+  enabled: true
   data: 
     - name: controller-role
       rules:
@@ -307,7 +298,7 @@ clusterroles:
           verbs: ["get", "list", "watch"]
         - apiGroups: [""]
           resources: ["configmaps"]
-          verbs: ["get", "update", "patch"]
+          verbs: ["create", "get", "update", "patch"]
         - apiGroups: ["apps"]
           resources: ["deployments"]
           verbs: ["get", "list", "patch", "update"]

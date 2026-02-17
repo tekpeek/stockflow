@@ -146,7 +146,7 @@ def identify_v4_stocks():
 
 def perform_market_sentiment_analysis(ticker_list):
     prompt=""
-    with open("/home/ubuntu/app/market_analysis_prompt.txt") as file:
+    with open("/app/market_analysis_prompt.txt") as file:
         prompt = file.read()
         prompt = prompt.replace("__TICKER_LIST__",str(ticker_list))
     file.close()

@@ -41,4 +41,4 @@ fi
 log_message "INFO" "Deployment completed."
 
 # Execution command
-### ./deploy_helm.sh "$OPENAI_API_KEY" "$SMTP_PASSWORD" "$API_KEY" "dev"
+### ./deploy_helm.sh "$OPENAI_API_KEY" "$SMTP_PASSWORD" "$API_KEY" "dev" "dev"

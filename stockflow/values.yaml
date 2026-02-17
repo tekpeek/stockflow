@@ -104,10 +104,10 @@ cronjobs:
     image: kingaiva/stockflow-common
     imageVersion: dev
     restartPolicy: OnFailure
-    command: ["/bin/bash", "-c", "python3 /home/ubuntu/app/discovery-engine.py"]
+    command: ["/bin/bash", "-c", "python3 /app/discovery-engine.py"]
     env:
       plain:
-        EQUITY_CSV_PATH: "/home/ubuntu/app/EQUITY_L.csv"
+        EQUITY_CSV_PATH: "/app/EQUITY_L.csv"
       secret:
         - name: SF_API_KEY
           key: api-key
@@ -124,7 +124,7 @@ cronjobs:
     image: kingaiva/stockflow-common
     imageVersion: dev
     restartPolicy: OnFailure
-    command: ["/bin/bash", "-c", "python3 /home/ubuntu/app/healthcheck-execution.py"]
+    command: ["/bin/bash", "-c", "python3 /app/healthcheck-execution.py"]
     ttlSecondsAfterFinished: 7200
     env:
       secret:
@@ -164,7 +164,7 @@ cronjobs:
     image: kingaiva/stockflow-common
     imageVersion: dev
     restartPolicy: OnFailure
-    command: ["/bin/bash", "-c", "python3 /home/ubuntu/app/cronjob-execution.py"]
+    command: ["/bin/bash", "-c", "python3 /app/cronjob-execution.py"]
     ttlSecondsAfterFinished: 7200
     env:
       secret:

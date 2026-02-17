@@ -51,6 +51,14 @@ jobs:
        push: true
        tags: kingaiva/market-intel-engine:${{ inputs.image-version || 'dev' }}
 
+    - name: Build and push stockflow-common
+      uses: docker/build-push-action@v5
+      with:
+       context:
+       file: ./dockerfiles/Dockerfile.stockflow-common
+       push: true
+       tags: kingaiva/stockflow-common:${{ inputs.image-version || 'dev' }}
+
   deploy:
     needs: build
     uses: ./.github/workflows/deploy-stockflow.yml

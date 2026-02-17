@@ -18,7 +18,7 @@ spec:
           app: {{ $item.name }}
       spec:
         {{- if $item.serviceAccountName }}
-        serviceAccountName: {{ $item.serviceAccountName }}
+        serviceAccountName: {{ $item.serviceAccountName }}-{{ $.Values.namespace }}
         {{- end }}
         containers:
         - name: {{ $item.name }}

@@ -34,15 +34,6 @@ configmaps:
       EVENT_DISPATCHER: "http://event-dispatcher-service:8000"
       KUBESNAP: "http://kubesnap-service.kubesnap.svc.cluster.local:9001"
       STOCKFLOW_CONTROLLER: "http://sf-ctrl-service:9000{{ .Values.apiPrefix }}"
-  - name: cronjob-config
-    files:
-      - name: discovery-engine.py
-      - name: healthcheck-execution.py
-      - name: cronjob-execution.py
-      - name: EQUITY_L.csv
-      - name: smtp_email_trigger.py
-      - name: market_analysis_prompt.txt
-      - name: email-template.html
     
 deployments:
   - name: signal-engine

@@ -9,16 +9,6 @@ log_message(){
 
 log_message "INFO" "Starting deployment"
 
-rm -rf files/*
-mkdir -p files
-log_message "INFO" "Files directory cleaned"
-log_message "INFO" "Copying files to files directory"
-cp -r ../src/core/*.py files/
-cp ../src/prompts/market_analysis_prompt.txt files/market_analysis_prompt.txt
-cp ../templates/email-template.html files/email-template.html
-cp ../update_tickers/EQUITY_L.csv files/EQUITY_L.csv
-log_message "INFO" "Files copied to files directory"
-
 export OPENAI_API_KEY=$1
 export SMTP_PASSWORD=$2
 export API_KEY=$3
@@ -48,8 +38,7 @@ else
         --set imageVersion=$IMAGE_VERSION
 fi
 
-rm -rf files/
-log_message "INFO" "Files directory cleaned. Deployment completed."
+log_message "INFO" "Deployment completed."
 
 # Execution command
 ### ./deploy_helm.sh "$OPENAI_API_KEY" "$SMTP_PASSWORD" "$API_KEY" "dev"

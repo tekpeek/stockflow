@@ -110,8 +110,8 @@ deployments:
 cronjobs:
   - name: discovery-engine
     schedule: "30 1 * * *" 
-    image: kingaiva/signal-engine
-    imageVersion: stable
+    image: kingaiva/stockflow-common
+    imageVersion: dev
     restartPolicy: OnFailure
     command: ["/bin/bash", "-c", "python3 /home/ubuntu/app/discovery-engine.py"]
     env:
@@ -126,21 +126,12 @@ cronjobs:
           key: STOCKFLOW_CONTROLLER
           configmap: service-urls
     volumeMounts:
-      - name: cronjob-config-volume
-        mountPath: /home/ubuntu/app/discovery-engine.py
-        subPath: discovery-engine.py
-      - name: cronjob-config-volume
-        mountPath: /home/ubuntu/app/EQUITY_L.csv
-        subPath: EQUITY_L.csv
     volumes:
-      configmap:
-        - name: cronjob-config-volume
-          configmap: cronjob-config
   ###
   - name: health-check
     schedule: "0 * * * *" 
-    image: kingaiva/signal-engine
-    imageVersion: stable
+    image: kingaiva/stockflow-common
+    imageVersion: dev
     restartPolicy: OnFailure
     command: ["/bin/bash", "-c", "python3 /home/ubuntu/app/healthcheck-execution.py"]
     ttlSecondsAfterFinished: 7200
@@ -175,18 +166,12 @@ cronjobs:
           key: STOCKFLOW_CONTROLLER
           configmap: service-urls
     volumeMounts:
-      - name: cronjob-config-volume
-        mountPath: /home/ubuntu/app/healthcheck-execution.py
-        subPath: healthcheck-execution.py
     volumes:
-      configmap:
-        - name: cronjob-config-volume
-          configmap: cronjob-config
   ###
   - name: signal-check-cronjob
     schedule: "30 2 * * 1,2,3,4,5" 
-    image: kingaiva/signal-engine
-    imageVersion: stable
+    image: kingaiva/stockflow-common
+    imageVersion: dev
     restartPolicy: OnFailure
     command: ["/bin/bash", "-c", "python3 /home/ubuntu/app/cronjob-execution.py"]
     ttlSecondsAfterFinished: 7200
@@ -221,30 +206,10 @@ cronjobs:
           key: STOCKFLOW_CONTROLLER
           configmap: service-urls
     volumeMounts:
-      - name: cronjob-config-volume
-        mountPath: /home/ubuntu/app/cronjob-execution.py
-        subPath: cronjob-execution.py
-      - name: cronjob-config-volume
-        mountPath: /home/ubuntu/app/EQUITY_L.csv
-        subPath: EQUITY_L.csv
-      - name: cronjob-config-volume
-        mountPath: /home/ubuntu/app/smtp_email_trigger.py
-        subPath: smtp_email_trigger.py
-      - name: cronjob-config-volume
-        mountPath: /home/ubuntu/app/market_analysis_prompt.txt
-        subPath: market_analysis_prompt.txt
-      - name: cronjob-config-volume
-        mountPath: /home/ubuntu/app/email-template.html
-        subPath: email-template.html
-      - name: cronjob-config-volume
-        mountPath: /home/ubuntu/app/top_500_nse_tickers.py
-        subPath: top_500_nse_tickers.py
       - name: top-stocks-volume
         mountPath: /app/data
     volumes:
       configmap:
-        - name: cronjob-config-volume
-          configmap: cronjob-config
         - name: top-stocks-volume
           configmap: top-stocks-cm
 

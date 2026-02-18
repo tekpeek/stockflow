@@ -17,9 +17,17 @@ jobs:
   build:
     name: build-image-and-push
     runs-on: self-hosted
+    outputs:
+      version: ${{ steps.chart_version.outputs.version }}
     steps:
     - name: Check out the repo
       uses: actions/checkout@v4
+
+    - name: Get appVersion from Chart.yaml
+      id: chart_version
+      run: |
+        VERSION=$(grep '^appVersion:' stockflow/Chart.yaml | awk '{print $2}' | tr -d '"')
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
 
     - name: Login to dockerhub
       uses: docker/login-action@v3
@@ -41,7 +49,7 @@ jobs:
        context:
        file: ./dockerfiles/Dockerfile.stockflow-controller
        push: true
-       tags: kingaiva/stockflow-controller:${{ inputs.image-version || 'dev' }}
+       tags: kingaiva/stockflow-controller:${{ inputs.image-version || steps.chart_version.outputs.version || 'dev' }}
 
     - name: Build and push market-intel-engine
       uses: docker/build-push-action@v5
@@ -49,7 +57,15 @@ jobs:
        context:
        file: ./dockerfiles/Dockerfile.market-intel-engine
        push: true
-       tags: kingaiva/market-intel-engine:${{ inputs.image-version || 'dev' }}
+       tags: kingaiva/market-intel-engine:${{ inputs.image-version || steps.chart_version.outputs.version || 'dev' }}
+
+    - name: Build and push stockflow-common
+      uses: docker/build-push-action@v5
+      with:
+       context:
+       file: ./dockerfiles/Dockerfile.stockflow-common
+       push: true
+       tags: kingaiva/stockflow-common:${{ inputs.image-version || steps.chart_version.outputs.version || 'dev' }}
 
     - name: Build and push stockflow-common
       uses: docker/build-push-action@v5
@@ -64,7 +80,7 @@ jobs:
     uses: ./.github/workflows/deploy-stockflow.yml
     with:
       namespace: ${{ inputs.namespace || 'dev' }}
-      image-version: ${{ inputs.image-version || 'dev' }}
+      image-version: ${{ inputs.image-version || needs.build.outputs.version || 'dev' }}
     secrets: inherit
   
   test:

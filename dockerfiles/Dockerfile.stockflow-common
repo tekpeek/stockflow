@@ -1,0 +1,22 @@
+FROM python:3.12-slim
+
+RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-pip \
+    python3-venv \
+    jq \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+RUN python3 -m venv /app/venv
+
+ENV PATH="/app/venv/bin:$PATH"
+ENV PYTHONUNBUFFERED=1
+
+RUN pip install yfinance pandas
+
+COPY src/core/*.py /app/
+COPY src/prompts/market_analysis_prompt.txt /app/market_analysis_prompt.txt
+COPY templates/email-template.html /app/email-template.html
+COPY update_tickers/EQUITY_L.csv /app/EQUITY_L.csv

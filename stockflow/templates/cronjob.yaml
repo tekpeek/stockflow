@@ -13,7 +13,7 @@ spec:
         spec:
           containers:
           - name: {{ $item.name }}
-            image: {{ $item.image }}:{{ $item.imageVersion }}
+            image: {{ $item.image }}:{{ $.Values.imageVersion }}
             env:
               - name: DEPLOY_TYPE
                 value: {{ $.Values.namespace }}

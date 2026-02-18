@@ -27,7 +27,7 @@ if [ "$NAMESPACE" == "default" ]; then
         --set smtpPassword="$SMTP_PASSWORD" \
         --set apiKey=$API_KEY \
         --set namespace=$NAMESPACE \
-        --set imageVersion=$IMAGE_VERSION
+        --set imageVersion=$IMAGE_VERSION --force
 else
     helm upgrade stockflow --install . -n $NAMESPACE \
         --set openaiApiKey=$OPENAI_API_KEY \
@@ -35,7 +35,7 @@ else
         --set apiKey=$API_KEY \
         --set namespace=$NAMESPACE \
         --set apiPrefix="/$NAMESPACE" \
-        --set imageVersion=$IMAGE_VERSION
+        --set imageVersion=$IMAGE_VERSION --force
 fi
 
 log_message "INFO" "Deployment completed."

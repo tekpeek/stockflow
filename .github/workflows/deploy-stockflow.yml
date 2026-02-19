@@ -27,4 +27,4 @@ jobs:
        SF_API_KEY: ${{ secrets.SF_API_KEY }}
        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
      run: |
-       cd stockflow/ && bash deploy_helm.sh "${{ secrets.OPENAI_API_KEY }}" "${{ secrets.SMTP_PASSWORD }}" "${{ secrets.SF_API_KEY }}" "${{ inputs.namespace || 'dev' }}" "${{ inputs.image-version || 'dev' }}"
+       cd helm/ && bash deploy_helm.sh "${{ secrets.OPENAI_API_KEY }}" "${{ secrets.SMTP_PASSWORD }}" "${{ secrets.SF_API_KEY }}" "${{ inputs.namespace || 'dev' }}" "${{ inputs.image-version || 'dev' }}"

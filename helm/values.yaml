@@ -1,0 +1,263 @@
+# Default values for stockflow.
+namespace: "None"
+smtpPassword: "None"
+imageVersion: "dev"
+apiKey: "None"
+openaiApiKey: "None"
+apiPrefix: ""
+
+secrets:
+  - name: strategy-config
+    data:
+      interval: "1d"
+      period: "14"
+      window: "20"
+      num_std: "2"
+  - name: api-credentials
+    data:
+      api-key: "{{ .Values.apiKey }}"
+      OPENAI_API_KEY: "{{ .Values.openaiApiKey }}"
+  - name: smtp-credentials
+    data:
+      smtp-host: "smtp.gmail.com"
+      smtp-port: "587"
+      smtp-password: "{{ .Values.smtpPassword }}"
+
+configmaps:
+  - name: maintenance-config
+    data:
+      status: "off"
+  - name: service-urls
+    data:
+      SIGNAL_ENGINE: "http://signal-engine-service:8000{{ .Values.apiPrefix }}"
+      MARKET_INTEL_ENGINE: "http://market-intel-engine-service:8000"
+      EVENT_DISPATCHER: "http://event-dispatcher-service:8000"
+      KUBESNAP: "http://kubesnap-service.kubesnap.svc.cluster.local:9001"
+      STOCKFLOW_CONTROLLER: "http://sf-ctrl-service:9000{{ .Values.apiPrefix }}"
+    
+deployments:
+  - name: signal-engine
+    replicas: 2
+    image: kingaiva/signal-engine
+    imageVersion: stable
+    env:
+      plain:
+        PORT: "8000"
+      secret:
+        - name: INTERVAL
+          key: interval
+          secret: strategy-config
+        - name: PERIOD
+          key: period
+          secret: strategy-config
+        - name: WINDOW
+          key: window
+          secret: strategy-config
+        - name: NUM_STD
+          key: num_std
+          secret: strategy-config
+      configmap:
+        - name: MAINTENANCE_STATUS
+          key: status
+          configmap: maintenance-config
+    ports:
+      - name: se-port
+        containerPort: 8000
+  - name: stockflow-controller
+    replicas: 2
+    image: kingaiva/stockflow-controller
+    imageVersion: stable
+    serviceAccountName: controller-svc-acc
+    env:
+      plain:
+        PORT: "9000"
+      secret:
+        - name: SF_API_KEY
+          key: api-key
+          secret: api-credentials
+    ports:
+      - name: sc-port
+        containerPort: 9000
+  - name: market-intel-engine
+    replicas: 2
+    image: kingaiva/market-intel-engine
+    imageVersion: stable
+    env:
+      plain:
+        PORT: "8000"
+      secret:
+        - name: OPENAI_API_KEY
+          key: OPENAI_API_KEY
+          secret: api-credentials
+      configmap:
+        - name: MAINTENANCE_STATUS
+          key: status
+          configmap: maintenance-config
+    ports:
+      - name: mie-port
+        containerPort: 8000
+
+# Cronjobs
+cronjobs:
+  - name: discovery-engine
+    schedule: "30 1 * * *" 
+    image: kingaiva/stockflow-common
+    imageVersion: dev
+    restartPolicy: OnFailure
+    command: ["/bin/bash", "-c", "python3 /app/discovery-engine.py"]
+    env:
+      plain:
+        EQUITY_CSV_PATH: "/app/EQUITY_L.csv"
+      secret:
+        - name: SF_API_KEY
+          key: api-key
+          secret: api-credentials
+      configmap:
+        - name: STOCKFLOW_CONTROLLER
+          key: STOCKFLOW_CONTROLLER
+          configmap: service-urls
+    volumeMounts:
+    volumes:
+  ###
+  - name: health-check
+    schedule: "0 * * * *" 
+    image: kingaiva/stockflow-common
+    imageVersion: dev
+    restartPolicy: OnFailure
+    command: ["/bin/bash", "-c", "python3 /app/healthcheck-execution.py"]
+    ttlSecondsAfterFinished: 7200
+    env:
+      secret:
+        - name: SMTP_HOST
+          key: smtp-host
+          secret: smtp-credentials
+        - name: SMTP_PORT
+          key: smtp-port
+          secret: smtp-credentials
+        - name: SMTP_PASSWORD
+          key: smtp-password
+          secret: smtp-credentials
+        - name: API_KEY
+          key: api-key
+          secret: api-credentials
+      configmap:
+        - name: SIGNAL_ENGINE
+          key: SIGNAL_ENGINE
+          configmap: service-urls
+        - name: MARKET_INTEL_ENGINE
+          key: MARKET_INTEL_ENGINE
+          configmap: service-urls
+        - name: EVENT_DISPATCHER
+          key: EVENT_DISPATCHER
+          configmap: service-urls
+        - name: KUBESNAP
+          key: KUBESNAP
+          configmap: service-urls
+        - name: STOCKFLOW_CONTROLLER
+          key: STOCKFLOW_CONTROLLER
+          configmap: service-urls
+    volumeMounts:
+    volumes:
+  ###
+  - name: signal-check-cronjob
+    schedule: "30 2 * * 1,2,3,4,5" 
+    image: kingaiva/stockflow-common
+    imageVersion: dev
+    restartPolicy: OnFailure
+    command: ["/bin/bash", "-c", "python3 /app/cronjob-execution.py"]
+    ttlSecondsAfterFinished: 7200
+    env:
+      secret:
+        - name: SMTP_HOST
+          key: smtp-host
+          secret: smtp-credentials
+        - name: SMTP_PORT
+          key: smtp-port
+          secret: smtp-credentials
+        - name: SMTP_PASSWORD
+          key: smtp-password
+          secret: smtp-credentials
+        - name: API_KEY
+          key: api-key
+          secret: api-credentials
+        - name: SF_API_KEY
+          key: api-key
+          secret: api-credentials
+      configmap:
+        - name: SIGNAL_ENGINE
+          key: SIGNAL_ENGINE
+          configmap: service-urls
+        - name: MARKET_INTEL_ENGINE
+          key: MARKET_INTEL_ENGINE
+          configmap: service-urls
+        - name: EVENT_DISPATCHER
+          key: EVENT_DISPATCHER
+          configmap: service-urls
+        - name: STOCKFLOW_CONTROLLER
+          key: STOCKFLOW_CONTROLLER
+          configmap: service-urls
+    volumeMounts:
+      - name: top-stocks-volume
+        mountPath: /app/data
+    volumes:
+      configmap:
+        - name: top-stocks-volume
+          configmap: top-stocks-cm
+
+services:
+  - name: market-intel-engine-service
+    app: market-intel-engine
+    port: 8000
+    portName: mie-svc-port
+    targetPort: mie-port
+  - name: signal-engine-service
+    app: signal-engine
+    port: 8000
+    portName: se-svc-port
+    targetPort: se-port
+  - name: sf-ctrl-service
+    app: stockflow-controller
+    port: 9000
+    portName: sc-svc-port
+    targetPort: sc-port
+
+ingress:
+  - name: stockflow-ingress
+    host: tekpeek.duckdns.org
+    paths:
+      - path: "{{ .Values.apiPrefix }}/api"
+        pathType: Prefix
+        backendServiceName: signal-engine-service
+        portNumber: 8000
+      - path: "{{ .Values.apiPrefix }}/api/admin"
+        pathType: Prefix
+        backendServiceName: sf-ctrl-service
+        portNumber: 9000
+
+clusterrolebindings:
+  enabled: true
+  data:
+    - name: controller-rolebinding
+      role: controller-role
+      serviceAccount: controller-svc-acc
+
+serviceaccounts:
+  - name: controller-svc-acc
+
+clusterroles:
+  enabled: true
+  data: 
+    - name: controller-role
+      rules:
+        - apiGroups: [""]
+          resources: ["pods", "services"]
+          verbs: ["get", "list", "watch"]
+        - apiGroups: [""]
+          resources: ["configmaps"]
+          verbs: ["create", "get", "update", "patch"]
+        - apiGroups: ["apps"]
+          resources: ["deployments"]
+          verbs: ["get", "list", "patch", "update"]
+        - apiGroups: ["batch"]
+          resources: ["cronjobs","jobs"]
+          verbs: ["create","get", "list", "patch"]

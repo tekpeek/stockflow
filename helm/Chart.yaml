@@ -1,0 +1,6 @@
+apiVersion: v2
+name: stockflow
+description: A Helm chart for Stockflow
+type: application
+version: 26.2.18-1
+appVersion: "26.2.19"

@@ -56,7 +56,7 @@ def check_cronjob_exists() -> bool:
     try:
         v1.read_namespaced_cron_job(
             name="signal-check-cronjob",
-            namespace="default"
+            namespace=NAMESPACE
         )
         return True
     except ApiException as e:
@@ -74,7 +74,7 @@ def health_check():
 @router.get("/api/admin/maintenance/status")
 async def get_maintenance_status():
     time_stamp = datetime.datetime.now(datetime.UTC)
-    configmap = v1_core.read_namespaced_config_map(name="maintenance-config",namespace="default")
+    configmap = v1_core.read_namespaced_config_map(name="maintenance-config",namespace=NAMESPACE)
     existing_status = configmap.data['status']
     logger.info(f"Maintenance status: {existing_status}")
     return JSONResponse({
@@ -96,20 +96,20 @@ async def enable_maintenance(status: str, dep=Depends(api_key_auth)) -> Dict[str
             "timestamp": f"{time_stamp}"
         })
     
-    configmap = v1_core.read_namespaced_config_map(name="maintenance-config",namespace="default")
+    configmap = v1_core.read_namespaced_config_map(name="maintenance-config",namespace=NAMESPACE)
     existing_status = configmap.data['status']
     logger.info(f"Status : {existing_status}")
     if existing_status != status:
         configmap.data['status'] = status
-        response = v1_core.patch_namespaced_config_map(name="maintenance-config",namespace="default",body=configmap)
+        response = v1_core.patch_namespaced_config_map(name="maintenance-config",namespace=NAMESPACE,body=configmap)
         logger.info(f"Response : {response}")
         # Perform a rollout restart by updating an annotation
-        deployment = v1_core_apps.read_namespaced_deployment(name="signal-engine", namespace="default")
+        deployment = v1_core_apps.read_namespaced_deployment(name="signal-engine", namespace=NAMESPACE)
         if not deployment.spec.template.metadata.annotations:
             deployment.spec.template.metadata.annotations = {}
         import time as _time
         deployment.spec.template.metadata.annotations["kubectl.kubernetes.io/restartedAt"] = datetime.datetime.utcnow().isoformat()
-        response = v1_core_apps.patch_namespaced_deployment(name="signal-engine", namespace="default", body=deployment)
+        response = v1_core_apps.patch_namespaced_deployment(name="signal-engine", namespace=NAMESPACE, body=deployment)
         logger.info(f"Rollout restart response : {response}")
         return JSONResponse({
                 "status": f"{status}",
@@ -139,7 +139,7 @@ async def trigger_cronjob(dep=Depends(api_key_auth)) -> Dict[str, Any]:
         
         cronjob = v1.read_namespaced_cron_job(
             name="signal-check-cronjob",
-            namespace="default"
+            namespace=NAMESPACE
         )
         
         job = client.V1Job(
@@ -156,7 +156,7 @@ async def trigger_cronjob(dep=Depends(api_key_auth)) -> Dict[str, Any]:
         )
         
         created_job = v1.create_namespaced_job(
-            namespace="default",
+            namespace=NAMESPACE,
             body=job
         )
         
@@ -167,7 +167,7 @@ async def trigger_cronjob(dep=Depends(api_key_auth)) -> Dict[str, Any]:
                 "status": "success",
                 "message": "Job created successfully from cronjob",
                 "job_name": job_name,
-                "details": f"Job {job_name} created in namespace default"
+                "details": f"Job {job_name} created in namespace {NAMESPACE}"
             }
         )
         

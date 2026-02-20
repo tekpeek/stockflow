@@ -1,150 +1,70 @@
-# StockFlow - Real-Time Stock Signal Analysis Microservice
+# StockFlow
 
-StockFlow is an automated stock analysis platform developed to enhance the efficiency of identifying potential trading opportunities. Designed to replicate and automate the analytical methods and indicators I typically employ, StockFlow systematically evaluates a broad range of stocks and generates a curated shortlist of candidates warranting further review.
+[![Build](https://github.com/AvinashSubhash/stockflow/actions/workflows/build.yml/badge.svg)](https://github.com/AvinashSubhash/stockflow/actions/workflows/build.yml)
+[![Deploy](https://github.com/AvinashSubhash/stockflow/actions/workflows/deploy-stockflow.yml/badge.svg)](https://github.com/AvinashSubhash/stockflow/actions/workflows/deploy-stockflow.yml)
 
-## Why was it built ?
-This tool is intended to serve as an initial screening layer for me, providing structured assistance in narrowing down the universe of stocks to those with promising characteristics. It is not a definitive prediction system to be relied upon blindly but rather a time-saving aid that supports more focused and informed decision-making. By automating the preliminary stages of analysis, StockFlow significantly reduces the effort and time required by me to identify high-potential stocks for further evaluation.
+**StockFlow** is a modern, microservice-based automated stock analysis platform. It leverages advanced technical indicators and AI-driven sentiment analysis to identify high-probability trading opportunities in the NSE market.
 
-## Who is it for ?
-Anyone who wants to trim down potential stocks to a limited count so that they can invest less time in initial screening and focus on more deeper analysis.
+---
 
-## Link to StockFlow Web App
+## Vision
+Built to streamline the preliminary screening of the "stock universe," StockFlow automates the transition from raw market data to curated, AI-validated trading alerts. It operates as a resilient "Resilience Mesh," integrating with external tools for health checks and notifications.
 
-🌐 **Live Application**: [StockFlow Web App](https://avinashsubhash.github.io/stockflow)
+## Architecture
+The system consists of three primary engines working in concert:
 
-📊 **API Documentation**: [API Documentation](docs/API_README.md)
+### 1. Market Scanning & Discovery
+```mermaid
+graph LR
+    DC[Discovery CronJob] --> |Top 900 Stocks By Volume| SC[Controller API] --> CM[(top-stocks-cm ConfigMap)]
+```
 
-## Live Workflow Status
+### 2. Daily Analysis Orchestration
+```mermaid
+graph TD
+    CM[(top-stocks-cm ConfigMap)] --> SCC[Signal-Check CronJob]
+    
+    SCC --> |1. Request| SE[Signal Engine]
+    SE --> |2. Results| SCC
+    
+    SCC --> |3. Request| MIE[Market Intel]
+    MIE --> |4. Results| SCC
+    
+    SCC --> |5. Alert| ED[Event Dispatcher] --> Email((Trader))
+```
 
-Image Build Workflow
+### 3. Health Check & Resilience
+```mermaid
+graph LR
+    HC[Health-Check] --> |Probes| Engines[All Microservices]
+    Engines --> |Unhealthy| ED[Event Dispatcher]
+```
+For a deep dive into the system design, see the **[Architecture PRD](docs/prds/architecture-prd.md)**.
 
-![Build](https://github.com/AvinashSubhash/stockflow/actions/workflows/build.yml/badge.svg)
+## Microservices & Logic
+- **[Signal Engine](docs/prds/signal-engine-prd.md)**: Logic behind the "BharatQuant v4" 3-layer hierarchy.
+- **[Discovery & Automation](docs/prds/discovery-prd.md)**: How we scan 500+ NSE stocks and validate them with AI.
+- **[API Specification](docs/api/api-spec.md)**: Technical reference for all service endpoints.
 
-Deploy Workflow
+## Technical Specifications
+- **[System Architecture Spec](docs/specs/architecture-techspec.md)**: Technical design and ecosystem integration.
+- **[Signal Engine Spec](docs/specs/signal-engine-techspec.md)**: Implementation details of V4 scoring.
 
-![Deploy](https://github.com/AvinashSubhash/stockflow/actions/workflows/deploy-stockflow.yml/badge.svg)
+## Deployment & Operations
+StockFlow is containerized with Docker and orchestrated via Kubernetes (K3s). 
+- **[Operations Guide](docs/ops/ops-guide.md)**: Deployment, Health Monitoring, and CI/CD pipelines.
 
-
-## Getting Started
-
-### Prerequisites
-- **Kubernetes Cluster** (K3s recommended)
-- **Docker**
-- **Python 3.12+**
-- **jq** (for health checks and scripts)
-- **kubectl** configured for your cluster
-
-### Installation
-
-1. **Clone the Repository**
+## Quick Start
+1. **Clone & Setup**:
    ```bash
    git clone https://github.com/AvinashSubhash/stockflow.git
-   cd stockflow
    ```
-
-2. **Configure Environment Variables**
-   You need to set up the following environment variables.
-   
-   **Required Environment Variables:**
-   - `OPENAI_API_KEY`: For Market Intel Engine
-   - `SF_API_KEY`: Set a Unique Key for Admin API Authentication
-   - `SMTP_PASSWORD`: For email notifications
-
-3. **Deploy to Kubernetes**
-   Use the deployment script to deploy to the `default` namespace:
+2. **Environment Variables**:
+   Set `OPENAI_API_KEY`, `SF_API_KEY`, and `SMTP_PASSWORD` in your K8s secrets.
+3. **Deploy**:
    ```bash
-   chmod +x deploy_project.sh
-   ./deploy_project.sh default
-   ```
-   *To deploy to a custom namespace (e.g., dev):*
-   ```bash
-   ./deploy_project.sh dev
+   ./infra/install-helm.sh
+   ./helm/deploy_helm.sh default
    ```
 
-### Configuration
-The system uses Kubernetes ConfigMaps and Secrets for configuration.
-
-**Strategy Configuration (`strategy-config` Secret):**
-- `interval`: Candle interval (default: "1d")
-- `period`: Lookback period (default: 14)
-- `window`: Bollinger Band window (default: 20)
-- `num_std`: Standard Deviations (default: 2)
-
-**Maintenance Mode:**
-Controlled via the `maintenance-config` ConfigMap. Use the Admin API to toggle.
-
-## Features
-
-### **Signal Engine**
-- **Multi-Indicator Analysis**: Identifying potential entry points by combining signals from RSI, MACD, Bollinger Bands, CMF (Chaikin Money Flow)
-- **Real-time Data**: Live stock data from Yahoo Finance
-- **Dynamic Stock Universe**: Automatically updates and scans the top 500 NSE stocks by trading volume
-- **Confidence Scoring**: Signal strength assessment (Weak/Strong)
-- **Externalized Strategy**: Configurable strategy parameters (Interval, Period, Window, StdDev) via Kubernetes Secrets
-- **Health check API**: Health check API to detect status of microservice
-
-### **Discovery Engine**
-- **Batch Processing**: Runs daily at 01:30 UTC to scan the entire NSE equity list.
-- **Volume Analysis**: Identifies top voting stocks based on 1-day volume and updates the `top-stocks-cm` ConfigMap.
-- **Dynamic Updates**: Feeds the "Top 900" list into the Signal Engine for deeper analysis.
-
-### **StockFlow Controller**
-- **Manual Job Trigger through API**: Administrative API endpoint for triggering manual job from conjob using API call
-- **Maintenance Mode**: Administrative control to enable/disable system maintenance mode, pausing API responses during updates
-- **Health check API**: Health check API to detect status of microservice
-
-### **Market Intel Engine**
-- **AI-Powered Analysis**: Performs sentiment analysis on stock tickers using OpenAI (GPT-5)
-- **Signal Validation**: Validates technical buy signals with AI-driven sentiment scores; only stocks with high ratings are alerted
-
-### **Technical Indicators**
-- **RSI (Relative Strength Index)**: Momentum oscillator with smoothing
-- **MACD (Moving Average Convergence Divergence)**: Trend and momentum analysis
-- **Bollinger Bands**: Volatility and price channel analysis
-- **CMF (Chaikin Money Flow)**: Volume-weighted price analysis
-
-### **API Services**
-- **Signal Engine API**: Real-time stock analysis endpoints
-- **Controller API**: Administrative and cronjob management
-- **CORS Support**: Cross-origin request handling
-- **Error Handling**: Comprehensive error responses
-- **Authentication for selected APIs**: API Key Authentication for administrative and sensitive endpoints 
-
-### **Automation & Monitoring**
-- **Scheduled Analysis**: Automated cronjobs for regular stock screening with AI validation
-- **Email Notifications**: Rich HTML email alerts containing technical signals and detailed AI sentiment analysis
-- **Health Monitoring**: Automated system health check and status monitoring with email alert on failure
-- **External Mesh Integrations**:
-  - **![Kubesnap](https://github.com/tekpeek/kubesnap)**: Automated snapshot triggering on failure.
-  - **![Event-Dispatcher](https://github.com/tekpeek/event-dispatcher)**: Centralized notification service for email alerts.
-  - *Note:* These services are integrated via API calls, creating a mesh-like ecosystem resilience layer.
-
-### **Deployment & Infrastructure**
-- **Lightweight Kubernetes**: Full K3s deployment with Role based access control
-- **Multi-Environment Support**: Deploy to custom namespaces (e.g., dev, staging) with automated ingress path rewriting
-- **Docker Containerization**: Microservice architecture
-- **Traefik Ingress**: Provides routing with TLS encryption using Traefik, and configures CORS to allow cross-service API calls securely.
-- **ConfigMaps & Secrets**: Secure configuration management with kubernetes secrets and configmaps
-- **CI/CD Pipeline with Automated Deployment**: Automated deployment using Github Actions to k3s cluster
-- **Cloud VM for complete deployment**: The entire service runs on Oracle Cloud Infrastructure VM which acts as a self hosted runner as well, on Github Actions.
-- **Static Frontend**: Static Frontend for stockflow APIs using Bootstrap, CSS, Javascript.
-
-### **Architecture**
-
-#### **StockFlow API Architecture**
-![StockFlow API Architecture](docs/diagrams/api-flow-diagram.png)
-
-#### **Stock Analysis CronJob Execution Diagram**
-![Stock Analysis CronJob Execution Diagram](docs/diagrams/cronjob-execution-diagram.png)
-
-### **Signal Aggregator Logic**
-![Signal Aggregator Logic](docs/diagrams/signal-aggregator-logic.png)
-
-#### **Health Check and Alert Flow Diagram**
-![Health Check and Alert Flow Diagram](docs/diagrams/health-check-cronjob-diagram.png)
-
-#### **CI/CD Github Actions Flow Diagram**
-![CI/CD Github Actions Flow Diagram](docs/diagrams/github-actions-diagram.png)
-
-
-
+---

@@ -108,24 +108,9 @@ Some endpoints require an API key. Pass your API key in the `X-API-KEY` header.
 
 ---
 
-### 2. Trigger Stock Analysis Cronjob
-- **Method:** POST
-- **Endpoint:** `/api/admin/trigger-cron`
-- **Description:** Triggers the stock analysis cronjob manually. Requires API key.
-- **Headers:**
-  - `X-API-Key`: your-api-key
-- **Response Example:**
-```json
-{
-  "job": "stock-analysis",
-  "status": "triggered",
-  "message": "Job triggered successfully"
-}
-```
 
----
 
-### 3. Trigger Kubernetes CronJob
+### 2. Trigger Stock Analysis CronJob
 - **Method:** GET
 - **Endpoint:** `/api/admin/trigger-cron`
 - **Description:** Triggers the Kubernetes cronjob for stock analysis. Requires API key.
@@ -145,6 +130,28 @@ Some endpoints require an API key. Pass your API key in the `X-API-KEY` header.
 {
   "status": "error",
   "detail": "signal-check-cronjob not found in the cluster"
+}
+```
+
+---
+
+### 3. Update Top Stocks (Discovery Engine)
+- **Method:** POST
+- **Endpoint:** `/api/admin/top-stocks`
+- **Description:** Updates the list of top stocks to be scanned. Used by the Discovery Engine.
+- **Headers:**
+  - `X-API-Key`: your-api-key
+- **Request Body:**
+```json
+{
+  "tickers": ["RELIANCE.NS", "TCS.NS", ...]
+}
+```
+- **Response Example:**
+```json
+{
+  "status": "success",
+  "count": 500
 }
 ```
 

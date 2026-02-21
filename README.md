@@ -5,6 +5,9 @@
 
 **StockFlow** is a modern, microservice-based automated stock analysis platform. It leverages advanced technical indicators and AI-driven sentiment analysis to identify high-probability trading opportunities in the NSE market.
 
+> [!NOTE]
+> The entire project is built and deployed on **ARM-based architecture** (Ampere A1).
+
 ---
 
 ## Vision

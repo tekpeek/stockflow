@@ -1,15 +1,18 @@
 # Operations & Deployment
 
-StockFlow relies on GitHub Actions for CI/CD and K3s for runtime orchestration.
+StockFlow relies on GitHub Actions for CI/CD and K3s for runtime orchestration. 
+
+> [!NOTE]
+> The entire build and deployment pipeline is executed on **ARM-based devices** (Ampere A1) using self-hosted GitHub runners.
 
 ## CI/CD Pipeline
 
 The CI/CD pipeline is handled by two main workflows in `.github/workflows/`:
 
 - **Build & Test (`build.yml`)**: Triggers on `push` to any branch or via `workflow_dispatch`. It performs the following:
-  1. Extracts the `appVersion` from `helm/Chart.yaml`.
-  2. Builds Docker images for all services. **Note**: The build order in the workflow currently lists `signal-engine`, `stockflow-controller`, `market-intel-engine`, and then `stockflow-common` (built twice).
-  3. Publishes images to **Docker Hub** (not GHCR).
+  1. Extracts the `appVersion` from Github Actions Variables.
+  2. Builds Docker images for all services. **Note**: The build order in the workflow currently lists `signal-engine`, `stockflow-controller`, `market-intel-engine`, and then `stockflow-common`.
+  3. Publishes images to **Docker Hub**.
   4. Triggers the deployment workflow.
 
   The workflow accepts `namespace` and `image-version` as inputs (via `workflow_dispatch`). By default, both are set to `"dev"`.

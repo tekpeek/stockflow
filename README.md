@@ -8,7 +8,7 @@
 ---
 
 ## Vision
-Built to streamline the preliminary screening of the "stock universe," StockFlow automates the transition from raw market data to curated, AI-validated trading alerts. It operates as a resilient "Resilience Mesh," integrating with external tools for health checks and notifications.
+StockFlow serves as an automated "L1 Analyst" for my personal trading workflow. It handles the heavy lifting of preliminary market screening—filtering hundreds of stocks based on technical indicators and volume anomalies, and passes only the highest-conviction setups to an AI for final validation. The goal is to eliminate noise, save time on manual chart reading, and deliver curated, actionable alerts straight to my inbox.
 
 ## Architecture
 The system consists of three primary engines working in concert:
@@ -31,6 +31,8 @@ graph TD
     MIE --> |4. Results| SCC
     
     SCC --> |5. Alert| ED[Event Dispatcher] --> Email((Trader))
+
+    click ED "https://github.com/tekpeek/event-dispatcher" "Event Dispatcher Repository"
 ```
 
 ### 3. Health Check & Resilience
@@ -38,33 +40,36 @@ graph TD
 graph LR
     HC[Health-Check] --> |Probes| Engines[All Microservices]
     Engines --> |Unhealthy| ED[Event Dispatcher]
+
+    click ED "https://github.com/tekpeek/event-dispatcher" "Event Dispatcher Repository"
 ```
-For a deep dive into the system design, see the **[Architecture PRD](docs/prds/architecture-prd.md)**.
 
-## Microservices & Logic
-- **[Signal Engine](docs/prds/signal-engine-prd.md)**: Logic behind the "BharatQuant v4" 3-layer hierarchy.
-- **[Discovery & Automation](docs/prds/discovery-prd.md)**: How we scan 500+ NSE stocks and validate them with AI.
-- **[API Specification](docs/api/api-spec.md)**: Technical reference for all service endpoints.
+## System Design & Operations
+- **[Architecture & Signal Logic](docs/architecture.md)**: Details on the 3-layer BharatQuant v4 strategy, the automated daily discovery pipeline, and the resilience health checks.
+- **[Operations & Deployment](docs/operations.md)**: CI/CD deployment guide, K3s infrastructure map, and internal API references.
 
-## Technical Specifications
-- **[System Architecture Spec](docs/specs/architecture-techspec.md)**: Technical design and ecosystem integration.
-- **[Signal Engine Spec](docs/specs/signal-engine-techspec.md)**: Implementation details of V4 scoring.
-
-## Deployment & Operations
-StockFlow is containerized with Docker and orchestrated via Kubernetes (K3s). 
-- **[Operations Guide](docs/ops/ops-guide.md)**: Deployment, Health Monitoring, and CI/CD pipelines.
+## Prerequisites
+- **Kubernetes Cluster**: A running K8s or K3s cluster is required.
+- **Ingress Controller**: Traefik must be installed and configured (see `infra/traefik-config.yaml` for a sample K3s configuration).
+- **External Dependencies**: You need an OpenAI API key and an SMTP account for alerts.
 
 ## Quick Start
-1. **Clone & Setup**:
+1. **Clone the Repository**:
    ```bash
-   git clone https://github.com/AvinashSubhash/stockflow.git
+   git clone https://github.com/tekpeek/stockflow.git
+   cd stockflow
    ```
-2. **Environment Variables**:
-   Set `OPENAI_API_KEY`, `SF_API_KEY`, and `SMTP_PASSWORD` in your K8s secrets.
-3. **Deploy**:
+2. **Deploy with Helm**:
+   Set your API keys and run the deployment script. The script requires five arguments: `OPENAI_API_KEY`, `SMTP_PASSWORD`, `SF_API_KEY`, `NAMESPACE`, and `IMAGE_VERSION`.
+
    ```bash
-   ./infra/install-helm.sh
-   ./helm/deploy_helm.sh default
+   # Export required secrets
+   export OPENAI_API_KEY="your_openai_key"
+   export SMTP_PASSWORD="your_smtp_password"
+   export SF_API_KEY="your_internal_api_key" # A secure token string used to authenticate internal API requests
+
+   # Deploy (Defaults: namespace="dev", version="dev")
+   ./helm/deploy_helm.sh "$OPENAI_API_KEY" "$SMTP_PASSWORD" "$SF_API_KEY" "dev" "dev"
    ```
 
 ---

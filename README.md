@@ -38,6 +38,9 @@ graph TD
     click ED "https://github.com/tekpeek/event-dispatcher" "Event Dispatcher Repository"
 ```
 
+> [!TIP]
+> This is how the automated email report is sent to the user: [Sample-Email.pdf](docs/assets/Sample-Email.pdf).
+
 ### 3. Health Check & Resilience
 ```mermaid
 graph LR

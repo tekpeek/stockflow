@@ -48,7 +48,7 @@ The system is fully automated via Kubernetes CronJobs and runs in three stages e
 1. **Discovery**: A CronJob runs at 01:30 UTC, scanning the NSE equity list to isolate the top 900 highest-volume stocks. This list is persisted into a Kubernetes ConfigMap.
 2. **Analysis Orchestration**: The main `Signal-Check` CronJob reads the 900 tickers and requests mathematical analysis from the **Signal Engine**.
 3. **AI Validation**: Setup candidates are passed to the **Market Intel Engine** where a GPT-5 model checks the list against institutional sentiment rules. 
-4. **Notification**: The final list of validated stocks is formatted and handed to the [Event Dispatcher](https://github.com/tekpeek/event-dispatcher) for email delivery.
+4. **Notification**: The final list of validated stocks is formatted and handed to the [Event Dispatcher](https://github.com/tekpeek/event-dispatcher) for email delivery. (See a [sample email](docs/assets/Sample-Email.pdf) for reference.)
 
 ## Signal Generation (BharatQuant v4)
 

@@ -77,25 +77,26 @@ def trigger_failure_api(issues):
         
         if response.status_code == 200:
             logger.info("Successfully triggered failure API")
-            logger.info(f"Failed to trigger failure API. Status: {response.status_code}, Response: {response.text}")
+        else:
+            logger.error(f"Failed to trigger failure API. Status: {response.status_code}, Response: {response.text}")
     except Exception as e:
         logger.error(f"Error triggering failure API: {e}")
 
 def send_email(issues,retries=3,timeout=20):
     url = f"{EVENT_DISPATCHER_URL}/api/v1/health-alert"
     headers = {"Content-Type": "application/json"}
-    payload = {"issues": issues}
+    payload = {"issues": issues, "channels": ["email", "slack"], "channel": "stockflow"}
 
     for attempt in range(retries):
         try:
             response = requests.post(url, json=payload, headers=headers, timeout=timeout)
             logger.info(f"Response for {url}: {response.text} : attempt: {attempt}")
-            
+            logger.info(f"Response status for {url}: {response.status_code}")
             if response.status_code == 200:
                 try:
                     response_json = response.json()
                     status = response_json.get("status")
-                    if status == "Health alert email sent":
+                    if status == "Health alert process initiated":
                         return True
                 except ValueError:
                     logger.error("Invalid JSON response")

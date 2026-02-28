@@ -90,7 +90,7 @@ def send_email(issues,retries=3,timeout=20):
         try:
             response = requests.post(url, json=payload, headers=headers, timeout=timeout)
             logger.info(f"Response for {url}: {response.text} : attempt: {attempt}")
-            
+            logger.info(f"Response status for {url}: {response.status_code}")
             if response.status_code == 200:
                 try:
                     response_json = response.json()

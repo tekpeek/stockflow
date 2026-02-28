@@ -84,7 +84,7 @@ def trigger_failure_api(issues):
 def send_email(issues,retries=3,timeout=20):
     url = f"{EVENT_DISPATCHER_URL}/api/v1/health-alert"
     headers = {"Content-Type": "application/json"}
-    payload = {"issues": issues}
+    payload = {"issues": issues, "channels": ["email", "slack"], "channel": "stockflow"}
 
     for attempt in range(retries):
         try:

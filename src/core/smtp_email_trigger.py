@@ -4,7 +4,7 @@ import time
 def send_email(logger,EVENT_DISPATCHER_URL,stock_list,retries=3,timeout=20):
     url = f"{EVENT_DISPATCHER_URL}/api/v1/email-alert"
     headers = {"Content-Type": "application/json"}
-    payload = {"stock_list": stock_list}
+    payload = {"stock_list": stock_list, "channels": ["email", "slack"], "channel": "stockflow"}
 
     for attempt in range(retries):
         try:

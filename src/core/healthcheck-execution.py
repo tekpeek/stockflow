@@ -77,7 +77,8 @@ def trigger_failure_api(issues):
         
         if response.status_code == 200:
             logger.info("Successfully triggered failure API")
-            logger.info(f"Failed to trigger failure API. Status: {response.status_code}, Response: {response.text}")
+        else:
+            logger.error(f"Failed to trigger failure API. Status: {response.status_code}, Response: {response.text}")
     except Exception as e:
         logger.error(f"Error triggering failure API: {e}")
 

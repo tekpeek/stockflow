@@ -95,7 +95,7 @@ def send_email(issues,retries=3,timeout=20):
                 try:
                     response_json = response.json()
                     status = response_json.get("status")
-                    if status == "Health alert email sent":
+                    if status == "Health alert process initiated":
                         return True
                 except ValueError:
                     logger.error("Invalid JSON response")

@@ -15,6 +15,19 @@ else
     log_message "INFO" "Namespace is $namespace"
     export url="https://tekpeek.duckdns.org/$namespace"
 fi
+
+# Maintenance API Check
+maintenance_status=$(curl -s -X GET $url/api/admin/maintenance/status | jq -r .status)
+if [[ "$maintenance_status" != "on" ]] && [[ "$maintenance_status" != "off" ]]; then
+    log_message "ERROR" "API Error! Endpoint [/api/admin/maintenance/status] not working."
+    exit 1
+elif [[ "$maintenance_status" == "on" ]]; then
+    log_message "INFO" "Maintenance mode is enabled"
+    exit 0
+else
+    log_message "INFO" "Endpoint [/api/admin/maintenance/status] check completed. Status: $maintenance_status"
+fi
+
 # Health Status check for public facing services
 signal_engine_health=$(curl -s -X GET $url/api/health | jq -r .status)
 if [[ "$signal_engine_health" != "OK" ]]; then

@@ -27,6 +27,7 @@ try:
     KUBESNAP_URL = os.getenv("KUBESNAP")
     DEPLOY_TYPE = os.getenv("DEPLOY_TYPE")
     API_KEY = os.getenv("API_KEY")
+    MAINTENANCE_STATUS = os.getenv("MAINTENANCE_STATUS")
 except Exception as e:
     logger.error(f"Error loading environment variables: {str(e)}")
 
@@ -108,6 +109,10 @@ def send_email(issues,retries=3,timeout=20):
     return False
 
 if __name__ == "__main__":
+    if MAINTENANCE_STATUS == "on":
+        logger.info("Maintenance mode is enabled. Skipping health checks.")
+        sys.exit(0)
+    
     health_status = health_check()
     logger.info(f"health_status: {health_status}")
     if not health_status[0]:

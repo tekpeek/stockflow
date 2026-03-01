@@ -156,6 +156,9 @@ cronjobs:
         - name: STOCKFLOW_CONTROLLER
           key: STOCKFLOW_CONTROLLER
           configmap: service-urls
+        - name: MAINTENANCE_STATUS
+          key: status
+          configmap: maintenance-config
     volumeMounts:
     volumes:
   ###

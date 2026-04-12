@@ -1,0 +1,25 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+    traefik.ingress.kubernetes.io/router.tls.certresolver: default
+  name: prometheus-ingress
+  namespace: dev
+spec:
+  ingressClassName: traefik
+  rules:
+  - host: tekpeek.duckdns.org
+    http:
+      paths:
+      - backend:
+          service:
+            name: prometheus-service
+            port:
+              number: 80
+        path: /prometheus
+        pathType: Prefix
+  tls:
+  - hosts:
+    - tekpeek.duckdns.org

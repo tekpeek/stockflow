@@ -25,6 +25,7 @@ secrets:
 
 configmaps:
   - name: maintenance-config
+    hook: "pre-install"
     data:
       status: "off"
   - name: service-urls

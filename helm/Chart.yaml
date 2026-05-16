@@ -3,4 +3,4 @@ name: stockflow
 description: A Helm chart for Stockflow
 type: application
 version: 26.5.16-3
-appVersion: "26.5.15"
+appVersion: "26.5.16"

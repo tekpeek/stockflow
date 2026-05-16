@@ -63,28 +63,6 @@ def check_cronjob_exists() -> bool:
         logger.error(f"Cronjob not found: {str(e)}")
         return False
 
-def configmapExists(name,namespace):
-    try:
-        v1_core.read_namespaced_config_map(name=name,namespace=namespace)
-        return True
-    except ApiException as e:
-        logger.error(f"Configmap not found: {str(e)}")
-        return False
-
-def createConfigmap(name,namespace,data):
-    data = client.V1ConfigMap(
-        metadata=client.V1ObjectMeta(
-            name=name,
-        ),
-        data=data
-    )
-    try:
-        v1_core.create_namespaced_config_map(name=name,namespace=namespace,body=data)
-        return True
-    except ApiException as e:
-        logger.error(f"Configmap not created: {str(e)}")
-        return False
-
 @router.get("/api/admin/health")
 def health_check():
     time_stamp = datetime.datetime.now(datetime.UTC)
@@ -118,8 +96,6 @@ async def enable_maintenance(status: str, dep=Depends(api_key_auth)) -> Dict[str
             "timestamp": f"{time_stamp}"
         })
     
-    #if not configmapExists("maintenance-config",NAMESPACE):
-    #    createConfigmap("maintenance-config",NAMESPACE,{'status':f'{status}'})
     configmap = v1_core.read_namespaced_config_map(name="maintenance-config",namespace=NAMESPACE)
     existing_status = configmap.data['status']
     logger.info(f"Status : {existing_status}")

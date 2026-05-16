@@ -24,9 +24,6 @@ secrets:
       smtp-password: "{{ .Values.smtpPassword }}"
 
 configmaps:
-  - name: maintenance-config
-    data:
-      status: "off"
   - name: service-urls
     data:
       SIGNAL_ENGINE: "http://signal-engine-service:8000{{ .Values.apiPrefix }}"

@@ -118,8 +118,8 @@ async def enable_maintenance(status: str, dep=Depends(api_key_auth)) -> Dict[str
             "timestamp": f"{time_stamp}"
         })
     
-    if not configmapExists("maintenance-config",NAMESPACE):
-        createConfigmap("maintenance-config",NAMESPACE,{'status':f'{status}'})
+    #if not configmapExists("maintenance-config",NAMESPACE):
+    #    createConfigmap("maintenance-config",NAMESPACE,{'status':f'{status}'})
     configmap = v1_core.read_namespaced_config_map(name="maintenance-config",namespace=NAMESPACE)
     existing_status = configmap.data['status']
     logger.info(f"Status : {existing_status}")

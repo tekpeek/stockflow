@@ -5,3 +5,4 @@ yfinance
 kubernetes
 openai
 requests
+google-genai

@@ -66,16 +66,17 @@ graph LR
    cd stockflow
    ```
 2. **Deploy with Helm**:
-   Set your API keys and run the deployment script. The script requires five arguments: `OPENAI_API_KEY`, `SMTP_PASSWORD`, `SF_API_KEY`, `NAMESPACE`, and `IMAGE_VERSION`.
+   Set your API keys and run the deployment script. The script requires six arguments: `OPENAI_API_KEY`, `SMTP_PASSWORD`, `SF_API_KEY`, `NAMESPACE`, `IMAGE_VERSION`, and `GEMINI_API_KEY`.
 
    ```bash
    # Export required secrets
    export OPENAI_API_KEY="your_openai_key"
    export SMTP_PASSWORD="your_smtp_password"
    export SF_API_KEY="your_internal_api_key" # A secure token string used to authenticate internal API requests
+   export GEMINI_API_KEY="your_gemini_key" # Required for Gemini API support
 
    # Deploy (Defaults: namespace="dev", version="dev")
-   ./helm/deploy_helm.sh "$OPENAI_API_KEY" "$SMTP_PASSWORD" "$SF_API_KEY" "dev" "dev"
+   ./helm/deploy_helm.sh "$OPENAI_API_KEY" "$SMTP_PASSWORD" "$SF_API_KEY" "dev" "dev" "$GEMINI_API_KEY"
    ```
 
 ---

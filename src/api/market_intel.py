@@ -8,6 +8,8 @@ import sys
 import os
 from openai import AsyncOpenAI
 import asyncio
+from google import genai
+from google.genai import types
 from pydantic import BaseModel
 
 # Configure logging to print to stdout
@@ -25,8 +27,17 @@ class Item(BaseModel):
 # Get values from environment variables (Kubernetes ConfigMap/Secret)
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 MAINTENANCE_STATUS = os.getenv("MAINTENANCE_STATUS")
+LLM_PROVIDER = os.getenv("LLM_PROVIDER", "openai").lower()
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+
 market_intel = FastAPI()
 client = AsyncOpenAI()
+gemini_client = None
+
+if LLM_PROVIDER == "gemini":
+    logger.info("Using Gemini LLM provider")
+    gemini_client = genai.Client(api_key=GEMINI_API_KEY)
 
 @market_intel.get("/health")
 async def health_check():
@@ -51,16 +62,29 @@ async def push_prompt(item: Item):
             "timestamp": f"{time_stamp}"
         })
     try:
-        completion = await client.chat.completions.create(
-        model="gpt-5",
-        messages=[
-            {
-                "role": "user",
-                "content": f"{item.prompt}",
-            },
-        ],
-        response_format={"type": "json_object"}
-        )
+        if LLM_PROVIDER == "gemini":
+            response = await gemini_client.aio.models.generate_content(
+                model=GEMINI_MODEL,
+                contents=item.prompt,
+                config=types.GenerateContentConfig(
+                    response_mime_type="application/json",
+                ),
+            )
+            final_result = response.text
+            full_response_obj = response
+        else:
+            completion = await client.chat.completions.create(
+            model="gpt-5",
+            messages=[
+                {
+                    "role": "user",
+                    "content": f"{item.prompt}",
+                },
+            ],
+            response_format={"type": "json_object"}
+            )
+            final_result = completion.choices[0].message.content
+            full_response_obj = completion
     except Exception as e:
         logging.info(f"API call failed. Error: {e}")
         return JSONResponse({
@@ -69,10 +93,9 @@ async def push_prompt(item: Item):
             "error": f"{e}"
         })
     time_stamp = datetime.datetime.now(datetime.UTC)
-    final_result = completion.choices[0].message.content
     if not final_result:
         logging.info("Result is empty, printing model response.")
-        print(completion)
+        print(full_response_obj)
         return JSONResponse({
             "result": "failed",
             "timestamp": f"{time_stamp}",

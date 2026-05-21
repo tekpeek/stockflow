@@ -4,6 +4,9 @@ smtpPassword: "None"
 imageVersion: "dev"
 apiKey: "None"
 openaiApiKey: "None"
+geminiApiKey: "None"
+llmProvider: "gemini"
+geminiModel: "gemini-2.5-flash"
 apiPrefix: ""
 
 secrets:
@@ -17,6 +20,7 @@ secrets:
     data:
       api-key: "{{ .Values.apiKey }}"
       OPENAI_API_KEY: "{{ .Values.openaiApiKey }}"
+      GEMINI_API_KEY: "{{ .Values.geminiApiKey }}"
   - name: smtp-credentials
     data:
       smtp-host: "smtp.gmail.com"
@@ -86,9 +90,14 @@ deployments:
     env:
       plain:
         PORT: "8000"
+        LLM_PROVIDER: "{{ .Values.llmProvider }}"
+        GEMINI_MODEL: "{{ .Values.geminiModel }}"
       secret:
         - name: OPENAI_API_KEY
           key: OPENAI_API_KEY
+          secret: api-credentials
+        - name: GEMINI_API_KEY
+          key: GEMINI_API_KEY
           secret: api-credentials
       configmap:
         - name: MAINTENANCE_STATUS

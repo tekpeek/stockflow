@@ -57,7 +57,7 @@ graph LR
 ## Prerequisites
 - **Kubernetes Cluster**: A running K8s or K3s cluster is required.
 - **Ingress Controller**: Traefik must be installed and configured (see `infra/traefik-config.yaml` for a sample K3s configuration).
-- **External Dependencies**: You need an OpenAI API key and an SMTP account for alerts.
+- **External Dependencies**: You need an OpenAI or Gemini API key and an SMTP account for alerts.
 
 ## Quick Start
 1. **Clone the Repository**:

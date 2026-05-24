@@ -14,7 +14,7 @@ RUN python3 -m venv /app/venv
 ENV PATH="/app/venv/bin:$PATH"
 ENV PYTHONUNBUFFERED=1
 
-RUN pip install fastapi uvicorn openai
+RUN pip install fastapi==0.136.1 uvicorn==0.47.0 openai==1.107.3 google-genai==2.5.0
 
 COPY src/api/market_intel.py /app/market_intel.py
 

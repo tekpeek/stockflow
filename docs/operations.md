@@ -21,11 +21,12 @@ The CI/CD pipeline is handled by two main workflows in `.github/workflows/`:
 ## Deployment Setup
 
 1. **Secrets**: Ensure the following are defined as GitHub Secrets and/or Kubernetes secrets:
-   - `OPENAI_API_KEY`: Key for GPT-5 analysis.
+   - `OPENAI_API_KEY`: Key for GPT-5 analysis (if using OpenAI).
+   - `GEMINI_API_KEY`: Key for Gemini analysis (if using Gemini).
    - `SF_API_KEY`: A secure key token string used for internal StockFlow API authentication.
    - `SMTP_PASSWORD`: Password for the alert email account.
 2. **Infrastructure**: Run `./infra/install-helm.sh` to ensure Helm is available.
-3. **Manual Deploy**: Run `./helm/deploy_helm.sh <OPENAI_API_KEY> <SMTP_PASSWORD> <SF_API_KEY> [namespace] [version]`.
+3. **Manual Deploy**: Run `./helm/deploy_helm.sh <OPENAI_API_KEY> <SMTP_PASSWORD> <SF_API_KEY> [namespace] [version] <GEMINI_API_KEY>`.
    - If not provided, `namespace` and `version` both default to `"dev"`.
 
 ---
@@ -57,4 +58,4 @@ All administrative requests to the Controller must include `X-API-Key` in the he
 | Endpoint | Method | Description |
 | :--- | :--- | :--- |
 | `/health` | `GET` | Health check. |
-| `/chat` | `POST` | Sends a prompt to the GPT-5 model (returns JSON). |
+| `/chat` | `POST` | Sends a prompt to the active AI model (GPT-5 or Gemini) (returns JSON). |

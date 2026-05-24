@@ -14,6 +14,7 @@ export SMTP_PASSWORD=$2
 export API_KEY=$3
 export NAMESPACE=$4
 export IMAGE_VERSION=$5
+export GEMINI_API_KEY=$6
 log_message "INFO" "Setting environment variables"
 log_message "INFO" "NAMESPACE: $NAMESPACE"
 log_message "INFO" "IMAGE_VERSION: $IMAGE_VERSION"
@@ -27,7 +28,8 @@ if [ "$NAMESPACE" == "default" ]; then
         --set smtpPassword="$SMTP_PASSWORD" \
         --set apiKey=$API_KEY \
         --set namespace=$NAMESPACE \
-        --set imageVersion=$IMAGE_VERSION
+        --set imageVersion=$IMAGE_VERSION \
+        --set geminiApiKey=$GEMINI_API_KEY
 else
     helm upgrade stockflow --install . -n $NAMESPACE \
         --set openaiApiKey=$OPENAI_API_KEY \
@@ -35,10 +37,11 @@ else
         --set apiKey=$API_KEY \
         --set namespace=$NAMESPACE \
         --set apiPrefix="/$NAMESPACE" \
-        --set imageVersion=$IMAGE_VERSION 
+        --set imageVersion=$IMAGE_VERSION \
+        --set geminiApiKey=$GEMINI_API_KEY
 fi
 
 log_message "INFO" "Deployment completed."
 
 # Execution command
-### ./deploy_helm.sh "$OPENAI_API_KEY" "$SMTP_PASSWORD" "$API_KEY" "dev" "dev"
+### ./deploy_helm.sh "$OPENAI_API_KEY" "$SMTP_PASSWORD" "$API_KEY" "dev" "dev" "$GEMINI_API_KEY"

@@ -26,6 +26,12 @@ spec:
           env:
           - name: DEPLOY_TYPE
             value: {{ $.Values.namespace }}
+          {{- if eq $item.name "market-intel-engine" }}
+          - name: LLM_PROVIDER
+            value: {{ $.Values.llmProvider }}
+          - name: GEMINI_MODEL
+            value: {{ $.Values.geminiModel }}
+          {{- end }}
           {{- include "mychart.renderEnv" $item | nindent 10}}
           imagePullPolicy: Always
           ports: {{- include "mychart.renderPorts" $item | nindent 12}}

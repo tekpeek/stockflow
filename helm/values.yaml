@@ -6,7 +6,7 @@ apiKey: "None"
 openaiApiKey: "None"
 geminiApiKey: "None"
 llmProvider: "gemini"
-geminiModel: "gemini-2.5-flash"
+geminiModel: "gemini-3.5-flash"
 apiPrefix: ""
 
 secrets:
@@ -90,8 +90,6 @@ deployments:
     env:
       plain:
         PORT: "8000"
-        LLM_PROVIDER: "{{ .Values.llmProvider }}"
-        GEMINI_MODEL: "{{ .Values.geminiModel }}"
       secret:
         - name: OPENAI_API_KEY
           key: OPENAI_API_KEY

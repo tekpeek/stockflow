@@ -1,0 +1,6 @@
+dependencies:
+- name: event-dispatcher
+  repository: file://../event-dispatcher/helm
+  version: 26.3.4-1
+digest: sha256:66440893d0609da4e140c52439f0f58d4abc986a3d83394507976f768900be9b
+generated: "2026-05-30T06:51:28.2920955Z"

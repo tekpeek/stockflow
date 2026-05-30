@@ -2,5 +2,10 @@ apiVersion: v2
 name: stockflow
 description: A Helm chart for Stockflow
 type: application
-version: 26.5.24-1
+version: 26.5.30-1
 appVersion: "26.5.23"
+dependencies:
+  - name: event-dispatcher
+    repository: "file://../event-dispatcher/helm"
+    version: 26.3.4-1
+    

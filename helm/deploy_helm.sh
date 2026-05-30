@@ -7,6 +7,15 @@ log_message(){
     echo "[$time]----[$type]---- $message"
 }
 
+log_message "INFO" "Pulling Helm chart dependencies"
+
+mkdir -p ../event-dispatcher
+git clone -b release_26.3.4 https://github.com/tekpeek/event-dispatcher.git/ ../event-dispatcher
+
+log_message "INFO" "Building Helm chart dependencies"
+
+helm dependency build .
+
 log_message "INFO" "Starting deployment"
 
 export OPENAI_API_KEY=$1
@@ -29,7 +38,11 @@ if [ "$NAMESPACE" == "default" ]; then
         --set apiKey=$API_KEY \
         --set namespace=$NAMESPACE \
         --set imageVersion=$IMAGE_VERSION \
-        --set geminiApiKey=$GEMINI_API_KEY
+        --set geminiApiKey=$GEMINI_API_KEY \
+        --set event-dispatcher.namespace=$NAMESPACE \
+        --set event-dispatcher.imageVersion=26.3.4 \
+        --set event-dispatcher.slackWebhookStockflow=$SLACK_WEBHOOK_STOCKFLOW
+
 else
     helm upgrade stockflow --install . -n $NAMESPACE \
         --set openaiApiKey=$OPENAI_API_KEY \
@@ -38,10 +51,19 @@ else
         --set namespace=$NAMESPACE \
         --set apiPrefix="/$NAMESPACE" \
         --set imageVersion=$IMAGE_VERSION \
-        --set geminiApiKey=$GEMINI_API_KEY
+        --set geminiApiKey=$GEMINI_API_KEY \
+        --set event-dispatcher.namespace=$NAMESPACE \
+        --set event-dispatcher.imageVersion=26.3.4 \
+        --set event-dispatcher.slackWebhookStockflow=$SLACK_WEBHOOK_STOCKFLOW
 fi
 
 log_message "INFO" "Deployment completed."
+
+# Clean up
+rm -rf ../event-dispatcher
+rm -rf charts
+
+log_message "INFO" "Clean up completed."
 
 # Execution command
 ### ./deploy_helm.sh "$OPENAI_API_KEY" "$SMTP_PASSWORD" "$API_KEY" "dev" "dev" "$GEMINI_API_KEY"
